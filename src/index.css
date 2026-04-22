@@ -1,0 +1,449 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* VeriNode Trust Color System - Professional & Secure */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 17%; /* Navy Gray #1e293b */
+
+    /* Deep Navy Primary - 더 깊고 권위 있는 네이비 */
+    --navy: 222 47% 11%;
+    --navy-light: 222 35% 22%;
+    --navy-dark: 222 55% 7%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 17%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 17%;
+
+    /* Primary - Deep Navy */
+    --primary: 222 47% 11%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Light Grey */
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 17%;
+
+    /* Muted */
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    /* Accent - Shield Gold (보호와 보상) */
+    --accent: 43 96% 56%;
+    --accent-foreground: 222 47% 11%;
+
+    /* Shield Gold for coins and rewards */
+    --gold: 43 96% 56%;
+    --gold-light: 43 96% 66%;
+    --gold-dark: 43 96% 46%;
+
+    /* Trust Blue - Royal Blue (신뢰의 블루) */
+    --trust: 217 91% 60%;
+    --trust-foreground: 0 0% 100%;
+    --trust-light: 217 91% 70%;
+    --trust-dark: 217 91% 45%;
+
+    /* Trust Teal - (보안과 안정) */
+    --trust-teal: 168 76% 36%;
+    --trust-teal-light: 168 76% 46%;
+    --trust-teal-dark: 168 76% 26%;
+
+    /* Safe Green - Emerald (안전과 인증) */
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 160 84% 49%;
+    --success-dark: 160 84% 29%;
+
+    /* Warning Orange */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 217 91% 60%;
+
+    --radius: 1rem;
+
+    /* Shadows - Trust 색상 기반 */
+    --shadow-sm: 0 1px 2px 0 hsl(222 47% 11% / 0.03);
+    --shadow-md: 0 4px 6px -1px hsl(222 47% 11% / 0.05), 0 2px 4px -2px hsl(222 47% 11% / 0.05);
+    --shadow-lg: 0 10px 25px -5px hsl(222 47% 11% / 0.08), 0 8px 10px -6px hsl(222 47% 11% / 0.03);
+    --shadow-card: 0 4px 20px -2px hsl(222 47% 11% / 0.08);
+    --shadow-glow: 0 0 20px hsl(43 96% 56% / 0.3);
+    --shadow-trust: 0 0 25px hsl(217 91% 60% / 0.25);
+    --shadow-secure: 0 0 20px hsl(168 76% 36% / 0.25);
+
+    /* Gradients - Trust 기반 */
+    --gradient-primary: linear-gradient(135deg, hsl(222 47% 11%), hsl(222 47% 20%));
+    --gradient-trust: linear-gradient(135deg, hsl(217 91% 60%), hsl(168 76% 36%));
+    --gradient-secure: linear-gradient(135deg, hsl(222 47% 11%), hsl(217 91% 50%));
+    --gradient-verified: linear-gradient(135deg, hsl(160 84% 39%), hsl(168 76% 36%));
+    --gradient-success: linear-gradient(135deg, hsl(160 84% 39%), hsl(168 76% 40%));
+    --gradient-gold: linear-gradient(135deg, hsl(43 96% 56%), hsl(38 96% 60%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 20% 99%));
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 17%;
+    --sidebar-primary: 222 47% 11%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 222 47% 17%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217 91% 60%;
+  }
+
+  /* Dark Mode - Enterprise/Demand Mode */
+  .dark {
+    --background: 222 47% 6%;
+    --foreground: 210 20% 98%;
+
+    --card: 222 47% 9%;
+    --card-foreground: 210 20% 98%;
+
+    --popover: 222 47% 9%;
+    --popover-foreground: 210 20% 98%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 6%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 20% 98%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 43 96% 56%;
+    --accent-foreground: 222 47% 6%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 20% 98%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+    letter-spacing: -0.02em;
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Pretendard Variable', Pretendard, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+  }
+
+  /* Serif accent for special elements */
+  .font-serif-accent {
+    font-family: 'Noto Serif KR', Georgia, 'Times New Roman', serif;
+    font-weight: 600;
+  }
+
+  /* Bold stat numbers */
+  .font-stat {
+    font-family: 'Pretendard Variable', Pretendard, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+
+  /* Extra bold for emphasis */
+  .font-display {
+    font-family: 'Pretendard Variable', Pretendard, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-gold {
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .bg-gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .bg-gradient-success {
+    background: var(--gradient-success);
+  }
+
+  .bg-gradient-gold {
+    background: var(--gradient-gold);
+  }
+
+  .bg-gradient-trust {
+    background: var(--gradient-trust);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Trust Score Arc */
+  .trust-arc {
+    stroke-dasharray: 283;
+    stroke-dashoffset: 283;
+    animation: draw-arc 1.5s ease-out forwards;
+  }
+
+  @keyframes draw-arc {
+    to {
+      stroke-dashoffset: calc(283 - (283 * var(--score-percent, 0) / 100));
+    }
+  }
+
+  /* Circular Progress */
+  .circular-progress {
+    stroke-dasharray: 188;
+    stroke-dashoffset: calc(188 - (188 * var(--progress, 0) / 100));
+    transition: stroke-dashoffset 1s ease-out;
+  }
+
+  /* Glow effect for active items */
+  .glow-gold {
+    box-shadow: 0 0 20px hsl(43 96% 56% / 0.4);
+  }
+
+  .glow-success {
+    box-shadow: 0 0 20px hsl(160 84% 39% / 0.4);
+  }
+
+  .glow-trust {
+    box-shadow: 0 0 25px hsl(217 91% 60% / 0.4);
+  }
+
+  .glow-secure {
+    box-shadow: 0 0 20px hsl(168 76% 36% / 0.4);
+  }
+
+  .shadow-trust {
+    box-shadow: var(--shadow-trust);
+  }
+
+  .shadow-secure {
+    box-shadow: var(--shadow-secure);
+  }
+
+  .bg-gradient-secure {
+    background: var(--gradient-secure);
+  }
+
+  .bg-gradient-verified {
+    background: var(--gradient-verified);
+  }
+
+  .text-gradient-trust {
+    background: var(--gradient-trust);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); opacity: 0.3; }
+  50% { transform: translateY(-20px); opacity: 1; }
+}
+
+@keyframes float-gentle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes particle-inward {
+  0% {
+    transform: rotate(var(--angle, 0deg)) translateX(50vw);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.6;
+  }
+  80% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: rotate(var(--angle, 0deg)) translateX(0);
+    opacity: 0;
+  }
+}
+
+@keyframes stamp-press {
+  0% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(0.9);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes celebration {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-100px) scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-200px) scale(0.5);
+    opacity: 0;
+  }
+}
+
+@keyframes confetti {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-300px) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@keyframes bounce-in {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes score-up {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+    color: hsl(45 93% 47%);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-particle-inward {
+  animation: particle-inward 5s ease-in-out infinite;
+}
+
+.animate-stamp-press {
+  animation: stamp-press 0.5s ease-out forwards;
+}
+
+.animate-celebration {
+  animation: celebration 1s ease-out forwards;
+}
+
+.animate-confetti {
+  animation: confetti 1.5s ease-out forwards;
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.5s ease-out forwards;
+}
+
+.animate-score-up {
+  animation: score-up 0.5s ease-out;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(220 14% 96%);
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(220 9% 75%);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(220 9% 60%);
+}
+
+/* Gradient Animation for Phase 3 Button */
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradient {
+  animation: gradient-shift 3s ease infinite;
+}

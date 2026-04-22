@@ -1,0 +1,5 @@
+export interface AnalysisResult { summary: string; statusDefinitions: string[]; businessRules: string[]; codeSnippets: string[]; fixedCode: string; logicExplanation: string; }
+export interface ProjectFile { path: string; sha: string; content?: string; originalContent?: string; status: 'pending' | 'analyzing' | 'fixed' | 'pushed' | 'error' | 'rolling_back'; fixedContent?: string; }
+export enum AppStatus { IDLE = 'IDLE', SCANNING = 'SCANNING', ANALYZING = 'ANALYZING', READY_TO_DEPLOY = 'READY_TO_DEPLOY', DEPLOYING = 'DEPLOYING', SUCCESS = 'SUCCESS', ERROR = 'ERROR' }
+export interface QualityMetrics { score: number; hasPasskey: boolean; myDataMatched: boolean; responseTimeOk: boolean; isPremium: boolean; isExcluded: boolean; }
+export interface ValuationDetail { baseValue: number; synergyMultiplier: number; dmPremium: number; trustScore: number; trustAdjustment: number; finalValue: number; activeSynergies: string[]; unverifiedCount: number; myDataPoints: number; isFrozen: boolean; freezeReason?: string; quality: QualityMetrics; }
