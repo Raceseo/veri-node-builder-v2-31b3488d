@@ -303,7 +303,7 @@ const Auth = () => {
         </form>
       </div>
 
-      <p className="text-muted-foreground text-xs mt-8">© 2024 VeriNode. All rights reserved.</p>
+      <p className="text-muted-foreground text-xs mt-8">© {new Date().getFullYear()} VeriNode. All rights reserved.</p>
     </div>
   );
 };
