@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { TablesInsert } from '@/integrations/supabase/types';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
@@ -140,14 +141,22 @@ export const useCorporatePreferences = () => {
   const savePreferences = useMutation({
     mutationFn: async (prefs: Partial<CorporatePreference>) => {
       if (!user?.id) throw new Error('User not authenticated');
+      const payload: TablesInsert<'corporate_preferences'> = {
+        buyer_id: user.id,
+        company_name: prefs.company_name || preferences?.company_name || '회사명 미입력',
+        industry: prefs.industry || preferences?.industry || '기타',
+        preferred_categories: prefs.preferred_categories || preferences?.preferred_categories || [],
+        preferred_demographics: prefs.preferred_demographics || preferences?.preferred_demographics || {},
+        collection_frequency: prefs.collection_frequency || preferences?.collection_frequency || 'quarterly',
+        budget_range_min: prefs.budget_range_min ?? preferences?.budget_range_min ?? 0,
+        budget_range_max: prefs.budget_range_max ?? preferences?.budget_range_max ?? 10000000,
+        auto_notify: prefs.auto_notify ?? preferences?.auto_notify ?? true,
+        updated_at: new Date().toISOString(),
+      };
       
       const { data, error } = await supabase
         .from('corporate_preferences')
-        .upsert([{
-          ...prefs,
-          buyer_id: user.id,
-          updated_at: new Date().toISOString(),
-        }])
+        .upsert([payload])
         .select()
         .single();
       
@@ -168,13 +177,23 @@ export const useCorporatePreferences = () => {
   const createSubscription = useMutation({
     mutationFn: async (sub: Partial<DataSubscription>) => {
       if (!user?.id) throw new Error('User not authenticated');
+      const payload: TablesInsert<'data_subscriptions'> = {
+        buyer_id: user.id,
+        subscription_type: sub.subscription_type || 'standard',
+        categories: sub.categories || [],
+        preference_id: sub.preference_id ?? null,
+        target_sample_count: sub.target_sample_count ?? 500,
+        target_grade: sub.target_grade || 'silver',
+        monthly_budget: sub.monthly_budget ?? 0,
+        next_collection_date: sub.next_collection_date ?? null,
+        last_collection_date: sub.last_collection_date ?? null,
+        is_active: sub.is_active ?? true,
+        auto_renew: sub.auto_renew ?? true,
+      };
       
       const { data, error } = await supabase
         .from('data_subscriptions')
-        .insert([{
-          ...sub,
-          buyer_id: user.id,
-        }])
+        .insert([payload])
         .select()
         .single();
       
