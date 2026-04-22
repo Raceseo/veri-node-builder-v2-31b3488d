@@ -7,7 +7,7 @@
  */
 
 import React, { useEffect, useState, lazy, Suspense } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useProfileContext } from "@/contexts/ProfileContext";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import { SubscriptionCreateSheet } from "@/components/corporate/SubscriptionCreateSheet";
@@ -27,7 +27,6 @@ type OnboardingStep = 'intro' | 'sovereignty' | 'promise' | 'select-mode' | 'com
 
 const Index = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { profile, isLoading, displayName } = useProfileContext();
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep | null>(null);
   const [userMode, setUserMode] = useState<'supplier' | 'demand'>('supplier');
@@ -41,11 +40,12 @@ const Index = () => {
     if (isLoading) return;
 
     if (profile?.onboarding_completed) {
-      setOnboardingStep('complete');
-    } else {
-      setOnboardingStep('intro');
+      navigate(profile.user_type === 'enterprise' ? '/enterprise' : '/dashboard', { replace: true });
+      return;
     }
-  }, [profile, isLoading]);
+
+    setOnboardingStep('intro');
+  }, [profile, isLoading, navigate]);
 
   // 로딩 중
   if (isLoading || onboardingStep === null) {
