@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { TablesInsert } from '@/integrations/supabase/types';
+import { Json, TablesInsert } from '@/integrations/supabase/types';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
@@ -146,7 +146,7 @@ export const useCorporatePreferences = () => {
         company_name: prefs.company_name || preferences?.company_name || '회사명 미입력',
         industry: prefs.industry || preferences?.industry || '기타',
         preferred_categories: prefs.preferred_categories || preferences?.preferred_categories || [],
-        preferred_demographics: prefs.preferred_demographics || preferences?.preferred_demographics || {},
+        preferred_demographics: (prefs.preferred_demographics || preferences?.preferred_demographics || {}) as Json,
         collection_frequency: prefs.collection_frequency || preferences?.collection_frequency || 'quarterly',
         budget_range_min: prefs.budget_range_min ?? preferences?.budget_range_min ?? 0,
         budget_range_max: prefs.budget_range_max ?? preferences?.budget_range_max ?? 10000000,
