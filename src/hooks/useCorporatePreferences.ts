@@ -143,11 +143,11 @@ export const useCorporatePreferences = () => {
       
       const { data, error } = await supabase
         .from('corporate_preferences')
-        .upsert({
+        .upsert([{
           ...prefs,
           buyer_id: user.id,
           updated_at: new Date().toISOString(),
-        })
+        }])
         .select()
         .single();
       
@@ -171,10 +171,10 @@ export const useCorporatePreferences = () => {
       
       const { data, error } = await supabase
         .from('data_subscriptions')
-        .insert({
+        .insert([{
           ...sub,
           buyer_id: user.id,
-        })
+        }])
         .select()
         .single();
       
