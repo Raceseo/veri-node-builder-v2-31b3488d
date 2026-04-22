@@ -77,9 +77,9 @@ const IdentityVerificationDialog = ({
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase.from('security_audit_logs').insert({
+        await supabase.from('withdrawal_audit_logs').insert({
           user_id: user.id,
-          event_type: type,
+          action: type,
           ip_address: 'client-side',
           details: details,
           created_at: new Date().toISOString()

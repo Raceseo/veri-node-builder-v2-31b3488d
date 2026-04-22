@@ -52,11 +52,12 @@ export const walletService = {
         .insert([{
           user_id: request.userId,
           amount: finalAmount,
-          original_amount: request.amount,
-          bonus_rate: rateApplied,
-          bank_account_hash: securityService.maskSensitiveData(request.bankAccount),
+          bonus_amount: finalAmount - request.amount,
+          bank_info: { masked_account: securityService.maskSensitiveData(request.bankAccount) },
+          security_metadata: { rate_applied: rateApplied, verified_by_admin: finalAmount >= securityService.HIGH_VALUE_THRESHOLD },
+          type: 'settlement',
           status: 'completed',
-          verified_by_admin: finalAmount >= securityService.HIGH_VALUE_THRESHOLD,
+          total_amount: finalAmount,
           created_at: new Date().toISOString()
         }])
         .select();
