@@ -47,7 +47,7 @@ export const valuationService = {
   evaluateDataAsset: async (userId: string, vnAmount: number, dmOptIn: boolean = false): Promise<AssetValuationResult> => {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('trust_score, reputation_score')
+        .select('trust_score')
       .eq('id', userId)
       .single();
 

@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/integrations/supabase/types';
 import { useAuth } from '@/hooks/useAuth';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -24,8 +25,8 @@ interface VerificationHistory {
   trust_score_after: number;
   score_change: number;
   vn_earned: number;
-  result: Record<string, any>;
-  created_at: string;
+  result: Json | null;
+  created_at: string | null;
 }
 
 interface ChartDataPoint {
@@ -100,8 +101,8 @@ export default function TrustScoreHistoryChart() {
 
       // 차트 데이터 변환
       const chartPoints: ChartDataPoint[] = (data || []).map((item) => ({
-        date: item.created_at,
-        displayDate: format(parseISO(item.created_at), 'M/d', { locale: ko }),
+        date: item.created_at || '',
+        displayDate: item.created_at ? format(parseISO(item.created_at), 'M/d', { locale: ko }) : '-',
         score: item.trust_score_after || 0,
         change: item.score_change || 0,
         type: item.verification_type,

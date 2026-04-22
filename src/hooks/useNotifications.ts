@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/integrations/supabase/types';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 
@@ -9,8 +10,8 @@ export interface Notification {
   type: string;
   title: string;
   message: string;
-  metadata: Record<string, unknown>;
-  is_read: boolean;
+  metadata: Json | null;
+  is_read: boolean | null;
   created_at: string;
 }
 

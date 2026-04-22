@@ -59,7 +59,19 @@ const SubscriptionManageView = ({ onBack }: SubscriptionManageViewProps) => {
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
-      setSubscription(data as Subscription | null);
+      setSubscription(data ? {
+        id: data.id,
+        user_id: data.user_id,
+        plan_type: data.plan_type,
+        status: data.status,
+        amount: data.price,
+        billing_cycle: data.billing_cycle,
+        next_billing_date: data.next_billing_at,
+        last_billing_date: data.started_at,
+        auto_renew: data.status === 'active',
+        customer_uid: data.billing_key_encrypted,
+        created_at: data.created_at,
+      } : null);
     } catch (error) {
       console.error('Failed to fetch subscription:', error);
     } finally {
@@ -75,8 +87,9 @@ const SubscriptionManageView = ({ onBack }: SubscriptionManageViewProps) => {
       const { error } = await supabase
         .from('subscriptions')
         .update({ 
-          auto_renew: !subscription.auto_renew,
-          updated_at: new Date().toISOString()
+          status: subscription.auto_renew ? 'cancelled' : 'active',
+          cancelled_at: subscription.auto_renew ? new Date().toISOString() : null,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', subscription.id);
 
@@ -110,8 +123,8 @@ const SubscriptionManageView = ({ onBack }: SubscriptionManageViewProps) => {
         .from('subscriptions')
         .update({ 
           status: 'cancelled',
-          auto_renew: false,
-          updated_at: new Date().toISOString()
+          cancelled_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
         .eq('id', subscription.id);
 
