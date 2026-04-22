@@ -26,26 +26,14 @@ const Auth = () => {
 
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, signIn, signUp, getUserType } = useAuth();
+  const { user, signIn, signUp } = useAuth();
   const { isSupported, isLoading: isPasskeyLoading, authenticateWithPasskey, checkPasskeyExists } = usePasskey();
 
-  // 사용자 유형에 따른 리다이렉트
+  // 온보딩 플로우를 거치도록 루트로 리다이렉트
   useEffect(() => {
     if (!user) return;
-    const redirect = async () => {
-      try {
-        const type = await getUserType(user.id);
-        if (type === 'enterprise') {
-          navigate('/enterprise', { replace: true });
-        } else {
-          navigate('/dashboard', { replace: true });
-        }
-      } catch {
-        navigate('/dashboard', { replace: true });
-      }
-    };
-    redirect();
-  }, [user, navigate, getUserType]);
+    navigate('/', { replace: true });
+  }, [user, navigate]);
 
   // passkey 체크
   useEffect(() => {
