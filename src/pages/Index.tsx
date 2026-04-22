@@ -9,6 +9,8 @@
 import React, { useEffect, useState, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProfileContext } from "@/contexts/ProfileContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import { SubscriptionCreateSheet } from "@/components/corporate/SubscriptionCreateSheet";
 import { DataRequestSheet } from "@/components/corporate/DataRequestSheet";
@@ -27,9 +29,11 @@ type OnboardingStep = 'intro' | 'sovereignty' | 'promise' | 'select-mode' | 'com
 
 const Index = () => {
   const navigate = useNavigate();
-  const { profile, isLoading, displayName } = useProfileContext();
+  const { toast } = useToast();
+  const { profile, isLoading, displayName, refetch } = useProfileContext();
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep | null>(null);
   const [userMode, setUserMode] = useState<'supplier' | 'demand'>('supplier');
+  const [isCompletingOnboarding, setIsCompletingOnboarding] = useState(false);
   
   // 기업 모드 Sheet 상태
   const [isSubscriptionOpen, setIsSubscriptionOpen] = useState(false);
@@ -47,8 +51,34 @@ const Index = () => {
     setOnboardingStep('intro');
   }, [profile, isLoading, navigate]);
 
+  const completeOnboarding = async (type: 'individual' | 'enterprise' | null) => {
+    if (!profile?.id) return;
+
+    const nextUserType = type === 'enterprise' ? 'enterprise' : 'individual';
+    setIsCompletingOnboarding(true);
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ onboarding_completed: true, user_type: nextUserType })
+      .eq('id', profile.id);
+
+    if (error) {
+      console.error('온보딩 완료 저장 실패:', error);
+      toast({
+        title: '온보딩 저장 실패',
+        description: '잠시 후 다시 시도해 주세요.',
+        variant: 'destructive',
+      });
+      setIsCompletingOnboarding(false);
+      return;
+    }
+
+    refetch();
+    navigate(nextUserType === 'enterprise' ? '/enterprise' : '/dashboard', { replace: true });
+  };
+
   // 로딩 중
-  if (isLoading || onboardingStep === null) {
+  if (isLoading || onboardingStep === null || isCompletingOnboarding) {
     return <LoadingSpinner text="VeriNode 로딩 중..." />;
   }
 
@@ -84,9 +114,9 @@ const Index = () => {
     return (
       <Suspense fallback={<LoadingSpinner />}>
         <DualModeEntryView 
-          onComplete={(type) => {
+          onComplete={async (type) => {
             setUserMode(type === 'enterprise' ? 'demand' : 'supplier');
-            setOnboardingStep('complete');
+            await completeOnboarding(type);
           }}
         />
       </Suspense>

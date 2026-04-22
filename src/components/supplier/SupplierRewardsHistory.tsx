@@ -19,16 +19,11 @@ interface Payout {
   id: string;
   purchase_id: string;
   base_amount: number;
-  quality_bonus: number;
+  quality_bonus: number | null;
   total_amount: number;
-  verification_grade: string;
-  bonus_breakdown: {
-    verification: number;
-    completeness: number;
-    freshness: number;
-  };
-  paid_at: string;
-  created_at: string;
+  verification_grade: string | null;
+  paid_at: string | null;
+  created_at: string | null;
 }
 
 export const SupplierRewardsHistory: React.FC<SupplierRewardsHistoryProps> = ({
@@ -49,7 +44,7 @@ export const SupplierRewardsHistory: React.FC<SupplierRewardsHistoryProps> = ({
         .limit(limit);
 
       if (error) throw error;
-      return data as Payout[];
+      return (data || []) as Payout[];
     },
     enabled: !!user?.id,
   });
@@ -156,7 +151,7 @@ export const SupplierRewardsHistory: React.FC<SupplierRewardsHistoryProps> = ({
                       {getGradeBadge(payout.verification_grade)}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {format(new Date(payout.paid_at || payout.created_at), 'M월 d일 HH:mm', { locale: ko })}
+                      {format(new Date(payout.paid_at || payout.created_at || new Date()), 'M월 d일 HH:mm', { locale: ko })}
                     </p>
                   </div>
                 </div>
@@ -165,10 +160,10 @@ export const SupplierRewardsHistory: React.FC<SupplierRewardsHistoryProps> = ({
                   <p className="font-bold text-emerald-600">
                     +{payout.total_amount.toLocaleString()} VN
                   </p>
-                  {payout.quality_bonus > 0 && (
+                  {(payout.quality_bonus || 0) > 0 && (
                     <p className="text-xs text-amber-600 flex items-center gap-1 justify-end">
                       <Sparkles className="h-3 w-3" />
-                      보너스 +{payout.quality_bonus.toLocaleString()}
+                      보너스 +{(payout.quality_bonus || 0).toLocaleString()}
                     </p>
                   )}
                 </div>
