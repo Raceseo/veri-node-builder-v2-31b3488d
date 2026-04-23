@@ -47,73 +47,120 @@ Lovable이 UI에서 만들고 DB에는 적용했지만 repo에 commit 안 한 �
 | 20260421230304 | profiles.ci_hash UNIQUE INDEX |
 | 20260422221437 | (Claude Code가 이 세션에서 MCP로 적용한 PR #2) |
 
-→ 현재 이 PR(`fix/lovable-repo-migration-sync`)에서 각각을 로컬 파일로 복원했습니다. `supabase/migrations/`에 8개 `.sql` 파일 추가.
+→ PR #5(`fix/lovable-repo-migration-sync`)에서 각각을 로컬 파일로 복원했습니다.
 
 ### 로컬 파일은 있는데 remote `schema_migrations`에 기록 없음 (36개)
 
 이 36개는 2026년 초부터 Lovable이 만든 파일들인데, Lovable이 해당 DDL을 **실제로 DB에 apply했는지는 불명확**합니다. 일부(예: `20260113214216` 가격 시스템, `20260304080702` data_access_requests)는 DB에 존재하지 않음 — **apply 안 됨** 확인.
 
-이 36개를 어떻게 처리할지는 이 PR의 범위 밖입니다. 아래 "다음 단계"를 보세요.
+이 36개는 수요 검증 이후 필요한 것만 개별 apply 권장 (아래 "재진입 체크리스트" 참조).
 
-## 3) 재발 방지 — Lovable Dashboard 설정 점검
+## 3) Lovable Dashboard 점검 결과 (2026-04-23 확인 완료)
 
-Lovable에는 repo에 commit하는 자동화가 있는데, DDL/Supabase 변경에 한해 일부 케이스에서 commit이 누락되는 것으로 보입니다. 사용자가 확인할 것:
+### ✅ GitHub 연동: 정상
+- **경로**: 에디터 → 점 세 개(⋯) 메뉴 → GitHub 박스 → "Configure"
+- 상태: `Raceseo/veri-node-builder-v2-31b3488d` / branch `main` / **Connected**
+- 발견: repo에 push는 정상 작동. 단 DB 마이그레이션 SQL은 push 대상에서 누락됨.
 
-### 단계 A. Lovable 프로젝트 설정 접근
+### ✅ Supabase 연동: 정상 (단, 자동화 토글 없음)
+- **경로**: 에디터 → 점 세 개(⋯) 메뉴 → **Cloud** → Supabase 패널
+- 상태: `Enabled` / `Raceseo's Org` 소속 `erkmtsgrbsjdudiofuxw (Verinode)` 프로젝트 연결됨
+- **"Linked Supabase organizations"** 모달에서 확인:
+  - Raceseo's Org → 버튼 없음 = 정상 연결
+  - INTYCO HOMPAGE DB → "Reconnect" 버튼 있지만 이 조직은 옛 홈페이지 프로젝트 (이미 다른 Supabase로 이전 완료) → verinode와 무관, 방치해도 무방
+- **결정적 발견**: 이 Supabase 통합 화면에 **"Auto-commit migrations to repo" 토글이 존재하지 않음**.
 
-1. https://lovable.dev/ 로그인
-2. 본인 verinode 프로젝트 열기
-3. 우측 상단 설정(⚙️) 또는 왼쪽 사이드바에서 **Settings** 진입
+### 🔴 결론
 
-### 단계 B. GitHub 연동 상태 확인
+**Lovable 자체가 DB 마이그레이션 파일을 repo에 auto-commit하는 기능을 제공하지 않습니다.** 드리프트는 "설정 실수"가 아니라 "Lovable이 원래 그렇게 만들어져 있어서" 발생합니다. 앞으로는 **수동 프로세스**로 대응할 수밖에 없습니다. 아래 치트시트가 그 정답.
 
-- **GitHub Integration** 섹션:
-  - repo가 `Raceseo/veri-node-builder-v2-31b3488d`로 연결돼 있는지
-  - 브랜치가 `main`으로 설정돼 있는지
-  - **"Auto-commit to repo"** 또는 **"Sync migrations"** 같은 토글이 있다면 **ON** 확인
+## 4) 수동 워크플로우 치트시트
 
-### 단계 C. Supabase 연동 상태 확인
-
-- **Supabase Integration** 섹션:
-  - Project가 `erkmtsgrbsjdudiofuxw (Verinode)` 로 연결돼 있는지
-  - **"Commit migrations to repo"** 또는 유사 토글 찾아서 ON
-  - 없다면 Lovable이 원래 migrations commit을 제공하지 않는 것 — 이 경우 **단계 D**
-
-### 단계 D. Lovable이 자동화 못 해주는 경우 대응
-
-만약 Lovable Dashboard에 "migrations commit" 옵션 자체가 없으면, **수동 프로세스**를 만들어야 합니다:
-
-1. **Lovable UI로 DB 스키마 변경 시**: 바로 Supabase Dashboard → SQL Editor에서 그 SQL을 확인 후, 동일 내용을 `supabase/migrations/<타임스탬프>_<설명>.sql` 파일로 repo에 commit
-2. **또는** 주기적으로 `npx supabase db pull` 실행해 remote 기준으로 파일 sync
-3. **이 PR에 추가된 `scripts/sync-from-lovable.sh` (있다면)** 스크립트 활용
-
-> 현재 Lovable이 단계 B·C의 옵션을 실제로 제공하는지 Claude Code에서 확인 불가 — 사용자가 Dashboard 직접 확인 필요.
-
-## 4) 남은 과제 (이번 세션 이후)
-
-- [ ] Lovable Dashboard 설정 점검 결과 공유 (위 단계 A~D)
-- [ ] `schema_migrations`에 로컬 36개 `--status applied`로 기록할지 판단
-  - 문제: 일부는 실제 DB에 apply 안 됨 → `applied` 로 기록하면 "거짓 상태"
-  - 안전한 방법: MCP로 각 마이그레이션의 핵심 테이블·컬럼 존재 여부 개별 체크 후, 실제 apply된 것만 `applied`, 나머지는 이 PR처럼 idempotent 재적용
-- [ ] `has_role(uuid, text)` 함수 정의 (현재 prod에 없음 — `data_access_requests` 마이그레이션 apply 시 필요)
-- [ ] Dashboard 내 기능 복원 (data_listings·data_sale_records 등) — **수요 검증 결과 후 진행 권장**
-
-## 5) 빠르게 참고할 명령
+### 🧰 도구 셋업 (최초 한 번)
 
 ```bash
-# 현재 로컬 ↔ remote 불일치 확인
-npx supabase db pull --dry-run   # remote에만 있는 것 나열
-git diff supabase/migrations/    # 로컬 새로 추가된 것 나열
+# Supabase CLI 없으면 npx로 쓰거나 설치:
+npm install -g supabase     # 또는 brew install supabase/tap/supabase (macOS)
 
-# 이 PR 내용을 prod에 반영 (이미 remote에 있는 것들이니 대부분 no-op)
-npx supabase db push
-
-# 또는 강제 sync (주의: 로컬 파일과 remote state 덮어씀)
-npx supabase migration repair --status applied <version>
+# 프로젝트 링크 (D:\app_develop\verinode 에서)
+cd D:\app_develop\verinode
+npx supabase link --project-ref erkmtsgrbsjdudiofuxw
+# (중간에 Database password 물어보면: Supabase Dashboard → Settings → Database)
 ```
 
-## 참고 링크
+링크는 프로젝트 폴더 안의 `supabase/.temp/`에 저장돼 있으니 한 번만 하면 됩니다.
+
+### 🟢 패턴 A — Lovable UI로 DB 스키마 변경한 직후
+
+Lovable 채팅에서 "auth에 컬럼 추가해줘", "새 테이블 만들어줘" 등 DDL 변경 요청 후:
+
+```bash
+cd D:\app_develop\verinode
+git pull                          # Lovable이 코드 파일 commit한 것 먼저 받기
+npx supabase db pull              # DB 변경 스냅샷을 supabase/migrations/에 파일로 저장
+git status                        # 새 파일(<timestamp>_remote_schema.sql) 생성됐는지 확인
+git add supabase/migrations/
+git commit -m "chore(db): sync Lovable migration (<무엇을 바꿨는지>)"
+git push
+```
+
+**핵심**: Lovable이 DB 건드릴 때마다 `supabase db pull` 한 번 돌려서 파일로 남겨야 앞으로 관리 가능. 귀찮으면 일주일에 한 번 몰아서 해도 됩니다 (대신 어떤 commit이 어떤 변경인지 추적이 어려워짐).
+
+### 🟢 패턴 B — Claude Code가 마이그레이션 PR 만들었을 때
+
+```bash
+# (PR 머지 완료 후)
+cd D:\app_develop\verinode
+git pull                          # 새 마이그레이션 파일 받기
+npx supabase db push              # DB에 적용
+```
+
+두 번째 단계를 빼먹으면 파일만 있고 DB엔 없는 상태가 됩니다 (drift).
+
+### 🟢 패턴 C — 정합성 점검 (월 1회 권장)
+
+```bash
+cd D:\app_develop\verinode
+git pull
+npx supabase db pull --dry-run    # remote에만 있는 것 있는지 표시
+npx supabase db push --dry-run    # 로컬에만 있는 것 있는지 표시
+```
+
+dry-run이라 실제 변경은 없고 리포트만. 둘 다 "no changes"면 정합 상태.
+
+### ⚠️ 패턴 D — drift 발견 시 복구 (이번 세션과 같은 상황)
+
+```bash
+# remote-only 마이그레이션을 로컬 파일로 가져오고 싶을 때
+npx supabase db pull
+# → supabase/migrations/<timestamp>_remote_schema.sql 생성됨
+
+# 또는 MCP로 직접 schema_migrations 테이블 조회해 SQL 원본 확보 (정확함)
+# (PR #5에서 사용한 방법)
+```
+
+`supabase migration repair`는 **마지막 수단**. state만 덮어쓰고 실제 schema는 안 건드리므로 "거짓 정합" 만들기 쉬움 → 가급적 피하기.
+
+## 5) 재진입 체크리스트 (수요 검증 Go 판정 후)
+
+PR #4의 수요 검증 설문에서 **Go 신호** 나오면 다시 verinode 개발 재개. 재개 시 해야 할 것들:
+
+- [ ] 최근 Lovable 변경분 반영: `git pull` + `npx supabase db pull`
+- [ ] remote-only 마이그레이션 있으면 PR #5 방식으로 로컬 파일 복원
+- [ ] 로컬 36개 파일 중 실제 apply 안 된 것 식별 (MCP로 핵심 테이블 존재 여부 체크):
+  - `data_access_requests`, `data_listings`, `data_sale_records` 등 Dashboard 용
+  - `has_role(uuid, text)` 함수 (data_access_requests RLS 필수)
+- [ ] 필요한 것만 idempotent catch-up SQL로 묶어 apply (PR #2 방식)
+- [ ] Auth.tsx에 "사전 신청" CTA 추가 (Google Form 링크 확보 후)
+
+## 6) 참고 링크
 
 - Supabase CLI migration 문서: https://supabase.com/docs/reference/cli/supabase-migration
 - `supabase db pull` vs `push` 차이: https://supabase.com/docs/guides/deployment/managing-environments
-- Lovable GitHub 연동 공식 문서: (사용자 확인 필요)
+- Lovable Supabase integration 문서: https://docs.lovable.dev/integrations/supabase
+
+## 7) 이 문서의 TL;DR
+
+1. Lovable은 DB 변경을 자동으로 repo에 commit해주지 않습니다. 확인됨.
+2. 그러니 Lovable로 DB 건드릴 때마다 `npx supabase db pull` → commit이 사용자분의 루틴이 돼야 합니다.
+3. 한 주에 한 번이라도 패턴 C의 dry-run 점검을 돌리면 이번 같은 drift가 쌓이기 전에 잡을 수 있습니다.
