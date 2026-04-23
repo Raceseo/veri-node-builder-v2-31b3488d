@@ -1430,6 +1430,7 @@ export type Database = {
       profiles: {
         Row: {
           age_group: string | null
+          birthday: string | null
           company: string | null
           created_at: string | null
           data_categories: string[] | null
@@ -1456,6 +1457,7 @@ export type Database = {
         }
         Insert: {
           age_group?: string | null
+          birthday?: string | null
           company?: string | null
           created_at?: string | null
           data_categories?: string[] | null
@@ -1482,6 +1484,7 @@ export type Database = {
         }
         Update: {
           age_group?: string | null
+          birthday?: string | null
           company?: string | null
           created_at?: string | null
           data_categories?: string[] | null
