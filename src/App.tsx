@@ -33,13 +33,11 @@ const App = () => (
           {/* Payment complete callback (public for mobile redirect) */}
           <Route path="/payment/complete" element={<PaymentComplete />} />
           
-          {/* Main app - protected (개인 사용자용 모바일) */}
+          {/* Main app — public landing for logged-out, onboarding/dashboard router for logged-in */}
           <Route path="/" element={
-            <ProtectedRoute>
-              <ProfileProvider>
-                <Index />
-              </ProfileProvider>
-            </ProtectedRoute>
+            <ProfileProvider>
+              <Index />
+            </ProfileProvider>
           } />
           
           {/* Dashboard - protected */}

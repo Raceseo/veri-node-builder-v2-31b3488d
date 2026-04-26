@@ -1,18 +1,110 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Mail, Lock, User, Eye, EyeOff, Fingerprint, Building2 } from 'lucide-react';
+import {
+  Mail,
+  Lock,
+  User,
+  Eye,
+  EyeOff,
+  Fingerprint,
+  Building2,
+  Shield,
+  Coins,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, UserType } from '@/hooks/useAuth';
 import { usePasskey } from '@/hooks/usePasskey';
 import { z } from 'zod';
 
+import { MarketingHeader } from '@/components/marketing/MarketingHeader';
+import { PreorderHero } from '@/components/marketing/PreorderHero';
+import { BenefitRow } from '@/components/marketing/BenefitRow';
+
 const emailSchema = z.string().email('유효한 이메일 주소를 입력하세요');
 const passwordSchema = z.string().min(6, '비밀번호는 최소 6자 이상이어야 합니다');
 
 const Auth = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [loginOpen, setLoginOpen] = useState(false);
+
+  // 이미 로그인된 사용자는 홈으로 보냄 (온보딩/대시보드)
+  useEffect(() => {
+    if (!user) return;
+    navigate('/', { replace: true });
+  }, [user, navigate]);
+
+  return (
+    <div className="min-h-screen bg-white font-sans text-foreground">
+      <MarketingHeader />
+
+      <PreorderHero
+        size="compact"
+        secondaryCta={
+          <button
+            type="button"
+            onClick={() => setLoginOpen(true)}
+            className="border-b border-border px-4 py-3.5 text-[15px] font-medium text-foreground hover:text-trust"
+          >
+            이미 가입하셨나요? 로그인
+          </button>
+        }
+      />
+
+      {/* 사전 신청 혜택 3줄 요약 */}
+      <section className="bg-secondary px-6 py-10 md:px-12">
+        <div className="grid gap-4 md:grid-cols-3">
+          <BenefitRow
+            icon={<Shield className="h-[18px] w-[18px] text-trust-dark" />}
+            title="런칭 직후 우선 초대"
+            desc="유료 설문을 이메일로 가장 먼저 받아봅니다."
+          />
+          <BenefitRow
+            icon={<Coins className="h-[18px] w-[18px] text-trust-dark" />}
+            title="건당 5,000원 즉시 지급"
+            desc="응답 완료 시 정산 — 사후 협상 없음."
+          />
+          <BenefitRow
+            icon={<Shield className="h-[18px] w-[18px] text-trust-dark" />}
+            title="중복·허위 응답 원천 차단"
+            desc={"공공 마이데이터 본인 인증으로 진짜 '나'만 응답, 응답 가치 보장."}
+          />
+        </div>
+      </section>
+
+      <footer className="flex flex-wrap items-center justify-between gap-3 px-6 py-7 text-[11.5px] text-muted-foreground md:px-12">
+        <span>© {new Date().getFullYear()} VeriNode. All rights reserved.</span>
+        <span>
+          사전 신청은 Google Form으로 수집되며, 런칭 전 서비스 안내 수신에 동의하는 것으로 간주됩니다.
+        </span>
+      </footer>
+
+      <LoginDialog open={loginOpen} onOpenChange={setLoginOpen} />
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────
+// LoginDialog — 기존 Auth.tsx 폼 로직을 모달로 보존
+// (email/password, passkey, signup with userType + displayName)
+// ─────────────────────────────────────────────────────────────
+
+function LoginDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,18 +116,15 @@ const Auth = () => {
   const [hasPasskeyForEmail, setHasPasskeyForEmail] = useState(false);
   const [isCheckingPasskey, setIsCheckingPasskey] = useState(false);
 
-  const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, signIn, signUp } = useAuth();
-  const { isSupported, isLoading: isPasskeyLoading, authenticateWithPasskey, checkPasskeyExists } = usePasskey();
+  const { signIn, signUp } = useAuth();
+  const {
+    isSupported,
+    isLoading: isPasskeyLoading,
+    authenticateWithPasskey,
+    checkPasskeyExists,
+  } = usePasskey();
 
-  // 온보딩 플로우를 거치도록 루트로 리다이렉트
-  useEffect(() => {
-    if (!user) return;
-    navigate('/', { replace: true });
-  }, [user, navigate]);
-
-  // passkey 체크
   useEffect(() => {
     if (!email || !emailSchema.safeParse(email).success) {
       setHasPasskeyForEmail(false);
@@ -52,28 +141,43 @@ const Auth = () => {
         setIsCheckingPasskey(false);
       }
     }, 800);
-    return () => { clearTimeout(timer); setIsCheckingPasskey(false); };
-  }, [email]);
+    return () => {
+      clearTimeout(timer);
+      setIsCheckingPasskey(false);
+    };
+  }, [email, checkPasskeyExists]);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
     const emailResult = emailSchema.safeParse(email);
     if (!emailResult.success) newErrors.email = emailResult.error.errors[0].message;
     const passwordResult = passwordSchema.safeParse(password);
-    if (!passwordResult.success) newErrors.password = passwordResult.error.errors[0].message;
+    if (!passwordResult.success)
+      newErrors.password = passwordResult.error.errors[0].message;
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handlePasskeyLogin = async () => {
-    if (!email) { setErrors({ email: '이메일을 먼저 입력하세요' }); return; }
+    if (!email) {
+      setErrors({ email: '이메일을 먼저 입력하세요' });
+      return;
+    }
     const emailResult = emailSchema.safeParse(email);
-    if (!emailResult.success) { setErrors({ email: emailResult.error.errors[0].message }); return; }
+    if (!emailResult.success) {
+      setErrors({ email: emailResult.error.errors[0].message });
+      return;
+    }
     const result = await authenticateWithPasskey(email);
     if (result.success) {
       toast({ title: '로그인 성공', description: '생체 인증으로 로그인되었습니다!' });
+      onOpenChange(false);
     } else {
-      toast({ title: '인증 실패', description: result.error || '생체 인증에 실패했습니다.', variant: 'destructive' });
+      toast({
+        title: '인증 실패',
+        description: result.error || '생체 인증에 실패했습니다.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -96,9 +200,15 @@ const Auth = () => {
           });
         } else {
           toast({ title: '로그인 성공', description: 'VeriNode에 오신 것을 환영합니다!' });
+          onOpenChange(false);
         }
       } else {
-        const { error } = await signUp(email, password, displayName || undefined, userType);
+        const { error } = await signUp(
+          email,
+          password,
+          displayName || undefined,
+          userType,
+        );
         if (error) {
           toast({
             title: '회원가입 실패',
@@ -112,54 +222,60 @@ const Auth = () => {
             title: '회원가입 성공',
             description: '인증 이메일이 발송되었습니다. 메일함을 확인해주세요.',
           });
+          onOpenChange(false);
         }
       }
     } catch {
-      toast({ title: '오류 발생', description: '인증 서버가 혼잡합니다. 잠시 후 다시 시도해 주세요.', variant: 'destructive' });
+      toast({
+        title: '오류 발생',
+        description: '인증 서버가 혼잡합니다. 잠시 후 다시 시도해 주세요.',
+        variant: 'destructive',
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const canUsePasskey = isSupported && isLogin && hasPasskeyForEmail && !isCheckingPasskey;
+  const canUsePasskey =
+    isSupported && isLogin && hasPasskeyForEmail && !isCheckingPasskey;
 
   return (
-    <div className="min-h-screen bg-[#F2F4F6] flex flex-col items-center justify-center px-6 py-12">
-      {/* Logo */}
-      <div className="flex flex-col items-center mb-8">
-        <div className="relative mb-4">
-          <Shield className="w-16 h-16 text-[#3182F6]" />
-          <div className="absolute inset-0 bg-[#3182F6]/20 blur-xl rounded-full" />
-        </div>
-        <h1 className="text-3xl font-bold text-foreground tracking-tight">VeriNode</h1>
-        <p className="text-muted-foreground text-sm mt-1">나의 데이터 주권을 지키다</p>
-      </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+            BETA 전용
+          </div>
+          <DialogTitle className="text-lg font-bold text-navy">
+            {isLogin ? '로그인' : '회원가입'}
+          </DialogTitle>
+        </DialogHeader>
 
-      {/* Auth Card */}
-      <div className="w-full max-w-sm bg-card rounded-2xl p-6 border border-border shadow-sm">
         {/* Tab Switch */}
-        <div className="flex mb-6 bg-muted rounded-xl p-1">
+        <div className="flex rounded-xl bg-muted p-1">
           <button
             onClick={() => setIsLogin(true)}
-            className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all ${
-              isLogin ? 'bg-[#3182F6] text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
+              isLogin
+                ? 'bg-trust text-white shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             로그인
           </button>
           <button
             onClick={() => setIsLogin(false)}
-            className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all ${
-              !isLogin ? 'bg-[#3182F6] text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
+              !isLogin
+                ? 'bg-trust text-white shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             회원가입
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* 회원가입 전용: 사용자 유형 선택 */}
           {!isLogin && (
             <div className="space-y-2">
               <Label className="text-foreground">가입 유형</Label>
@@ -167,25 +283,25 @@ const Auth = () => {
                 <button
                   type="button"
                   onClick={() => setUserType('individual')}
-                  className={`flex items-center gap-2 p-3 rounded-xl border text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 rounded-xl border p-3 text-sm font-medium transition-all ${
                     userType === 'individual'
-                      ? 'border-[#3182F6] bg-[#3182F6]/5 text-[#3182F6]'
-                      : 'border-border text-muted-foreground hover:border-[#3182F6]/50'
+                      ? 'border-trust bg-trust/5 text-trust'
+                      : 'border-border text-muted-foreground hover:border-trust/50'
                   }`}
                 >
-                  <User className="w-4 h-4" />
+                  <User className="h-4 w-4" />
                   개인 (공급자)
                 </button>
                 <button
                   type="button"
                   onClick={() => setUserType('enterprise')}
-                  className={`flex items-center gap-2 p-3 rounded-xl border text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 rounded-xl border p-3 text-sm font-medium transition-all ${
                     userType === 'enterprise'
-                      ? 'border-[#3182F6] bg-[#3182F6]/5 text-[#3182F6]'
-                      : 'border-border text-muted-foreground hover:border-[#3182F6]/50'
+                      ? 'border-trust bg-trust/5 text-trust'
+                      : 'border-border text-muted-foreground hover:border-trust/50'
                   }`}
                 >
-                  <Building2 className="w-4 h-4" />
+                  <Building2 className="h-4 w-4" />
                   기업 (수요자)
                 </button>
               </div>
@@ -199,9 +315,9 @@ const Auth = () => {
               </Label>
               <div className="relative">
                 {userType === 'enterprise' ? (
-                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Building2 className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                 ) : (
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <User className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                 )}
                 <Input
                   id="displayName"
@@ -209,68 +325,89 @@ const Auth = () => {
                   placeholder={userType === 'enterprise' ? '주식회사 OOO' : '홍길동'}
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="pl-10 bg-muted border-border text-foreground placeholder:text-muted-foreground focus:border-[#3182F6] focus:ring-[#3182F6]"
+                  className="border-border bg-muted pl-10 text-foreground placeholder:text-muted-foreground focus:border-trust focus:ring-trust"
                 />
               </div>
             </div>
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-foreground">이메일</Label>
+            <Label htmlFor="email" className="text-foreground">
+              이메일
+            </Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="email"
                 type="email"
                 placeholder="email@example.com"
                 value={email}
-                onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: undefined })); }}
-                className={`pl-10 bg-muted border-border text-foreground placeholder:text-muted-foreground focus:border-[#3182F6] focus:ring-[#3182F6] ${errors.email ? 'border-destructive' : ''}`}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setErrors((prev) => ({ ...prev, email: undefined }));
+                }}
+                className={`border-border bg-muted pl-10 text-foreground placeholder:text-muted-foreground focus:border-trust focus:ring-trust ${
+                  errors.email ? 'border-destructive' : ''
+                }`}
               />
             </div>
-            {errors.email && <p className="text-destructive text-xs mt-1">{errors.email}</p>}
+            {errors.email && (
+              <p className="mt-1 text-xs text-destructive">{errors.email}</p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-foreground">비밀번호</Label>
+            <Label htmlFor="password" className="text-foreground">
+              비밀번호
+            </Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => { setPassword(e.target.value); setErrors(prev => ({ ...prev, password: undefined })); }}
-                className={`pl-10 pr-10 bg-muted border-border text-foreground placeholder:text-muted-foreground focus:border-[#3182F6] focus:ring-[#3182F6] ${errors.password ? 'border-destructive' : ''}`}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setErrors((prev) => ({ ...prev, password: undefined }));
+                }}
+                className={`border-border bg-muted pl-10 pr-10 text-foreground placeholder:text-muted-foreground focus:border-trust focus:ring-trust ${
+                  errors.password ? 'border-destructive' : ''
+                }`}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </div>
-            {errors.password && <p className="text-destructive text-xs mt-1">{errors.password}</p>}
+            {errors.password && (
+              <p className="mt-1 text-xs text-destructive">{errors.password}</p>
+            )}
           </div>
 
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-[#3182F6] hover:bg-[#2563EB] text-white font-medium py-6 rounded-xl"
+            className="w-full rounded-xl bg-trust py-6 font-medium text-white hover:bg-trust-dark"
           >
             {isSubmitting ? (
               <span className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                 처리 중...
               </span>
-            ) : isLogin ? '로그인' : '회원가입'}
+            ) : isLogin ? (
+              '로그인'
+            ) : (
+              '회원가입'
+            )}
           </Button>
 
-          {/* 생체 인증 */}
           {isLogin && isSupported && (
             <>
-              <div className="relative flex items-center my-2">
+              <div className="relative my-2 flex items-center">
                 <div className="flex-1 border-t border-border" />
                 <span className="px-3 text-xs text-muted-foreground">또는</span>
                 <div className="flex-1 border-t border-border" />
@@ -280,32 +417,41 @@ const Auth = () => {
                 variant="outline"
                 onClick={handlePasskeyLogin}
                 disabled={!canUsePasskey || isPasskeyLoading}
-                className="w-full h-12 rounded-xl border-border text-foreground hover:bg-muted"
+                className="h-12 w-full rounded-xl border-border text-foreground hover:bg-muted"
               >
                 {isPasskeyLoading ? (
-                  <span className="flex items-center gap-2"><Fingerprint className="w-5 h-5 animate-pulse" />인증 중...</span>
+                  <span className="flex items-center gap-2">
+                    <Fingerprint className="h-5 w-5 animate-pulse" />
+                    인증 중...
+                  </span>
                 ) : isCheckingPasskey ? (
                   <span className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
                     확인 중...
                   </span>
                 ) : (
-                  <span className="flex items-center gap-2"><Fingerprint className="w-5 h-5" />지문 / Face ID로 로그인</span>
+                  <span className="flex items-center gap-2">
+                    <Fingerprint className="h-5 w-5" />
+                    지문 / Face ID로 로그인
+                  </span>
                 )}
               </Button>
               {!hasPasskeyForEmail && email && !isCheckingPasskey && (
-                <p className="text-xs text-muted-foreground text-center">
+                <p className="text-center text-xs text-muted-foreground">
                   💡 로그인 후 설정에서 생체 인증을 등록할 수 있습니다
                 </p>
               )}
             </>
           )}
         </form>
-      </div>
 
-      <p className="text-muted-foreground text-xs mt-8">© {new Date().getFullYear()} VeriNode. All rights reserved.</p>
-    </div>
+        <div className="rounded-xl bg-muted p-3 text-[11.5px] leading-relaxed text-muted-foreground">
+          정식 로그인은 현재 <b>베타 테스터 전용</b>입니다. 일반 사용자는 상단{' '}
+          <b className="text-trust">사전 신청</b>을 이용해주세요.
+        </div>
+      </DialogContent>
+    </Dialog>
   );
-};
+}
 
 export default Auth;
