@@ -9,11 +9,13 @@
 import React, { useEffect, useState, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProfileContext } from "@/contexts/ProfileContext";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import { SubscriptionCreateSheet } from "@/components/corporate/SubscriptionCreateSheet";
 import { DataRequestSheet } from "@/components/corporate/DataRequestSheet";
+import PreorderLanding from "./PreorderLanding";
 
 // Lazy load layouts
 const SupplierLayout = lazy(() => import("@/components/layouts/SupplierLayout"));
@@ -30,6 +32,7 @@ type OnboardingStep = 'intro' | 'sovereignty' | 'promise' | 'select-mode' | 'com
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
   const { profile, isLoading, displayName, refetch } = useProfileContext();
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep | null>(null);
   const [userMode, setUserMode] = useState<'supplier' | 'demand'>('supplier');
@@ -39,9 +42,9 @@ const Index = () => {
   const [isSubscriptionOpen, setIsSubscriptionOpen] = useState(false);
   const [isDataRequestOpen, setIsDataRequestOpen] = useState(false);
 
-  // 온보딩 상태 결정
+  // 온보딩 상태 결정 — 로그인된 사용자만 대상
   useEffect(() => {
-    if (isLoading) return;
+    if (!user || isLoading) return;
 
     if (profile?.onboarding_completed) {
       navigate(profile.user_type === 'enterprise' ? '/enterprise' : '/dashboard', { replace: true });
@@ -49,7 +52,7 @@ const Index = () => {
     }
 
     setOnboardingStep('intro');
-  }, [profile, isLoading, navigate]);
+  }, [user, profile, isLoading, navigate]);
 
   const completeOnboarding = async (type: 'individual' | 'enterprise' | null) => {
     if (!profile?.id) return;
@@ -77,7 +80,17 @@ const Index = () => {
     navigate(nextUserType === 'enterprise' ? '/enterprise' : '/dashboard', { replace: true });
   };
 
-  // 로딩 중
+  // 인증 로딩 중
+  if (authLoading) {
+    return <LoadingSpinner text="VeriNode 로딩 중..." />;
+  }
+
+  // 로그아웃 상태 → 공개 랜딩 (사전 신청 hero)
+  if (!user) {
+    return <PreorderLanding />;
+  }
+
+  // 로그인 + 프로필 로딩 중 / 온보딩 단계 결정 전
   if (isLoading || onboardingStep === null || isCompletingOnboarding) {
     return <LoadingSpinner text="VeriNode 로딩 중..." />;
   }
