@@ -86,3 +86,11 @@ Claude Code에게 말하기. Claude Code가 MCP로 erkmt에 apply하고 마이�
 - 로컬 파일 36개 중 실제 apply 안 된 마이그레이션 식별 (data_access_requests·data_listings 등 Dashboard용)
 - `has_role(uuid, text)` 함수 erkmt에 정의
 - Auth.tsx에 "사전 신청" CTA 연결 (Google Form URL 확보 후)
+
+## VeriNode DB 보안 규칙 (필수)
+1. 새 테이블 생성 시 반드시 같은 마이그레이션에 ENABLE ROW LEVEL SECURITY와 RLS 정책을 포함할 것
+2. RLS 정책에 USING (true) / WITH CHECK (true) 금지 (공개 읽기 전용 SELECT만 예외)
+3. SECURITY DEFINER 함수 생성 시 같은 마이그레이션에서 REVOKE EXECUTE ... FROM PUBLIC, anon, authenticated 후 필요한 역할에만 GRANT할 것
+4. VN잔액 변경은 Edge Function(service_role) 경유만 허용. 프론트엔드(src/)에서 잔액 변경 RPC 직접 호출 금지
+5. DB 스키마 변경 작업 후 Supabase Advisor 경고 0건 확인을 완료 기준에 포함할 것
+6. 관리자 2인 승인 로직은 어떤 리팩토링에서도 제거·우회 금지
