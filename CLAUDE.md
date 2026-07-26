@@ -13,16 +13,16 @@
 
 ```
 ┌─────────────────────────────────┬──────────────────────────────────┐
-│ Ray의 실제 prod Supabase        │ Lovable 내부 runtime Supabase    │
+│ 앱이 실제 쓰는 prod Supabase    │ 구(舊) prod (비활성)             │
 ├─────────────────────────────────┼──────────────────────────────────┤
-│ erkmtsgrbsjdudiofuxw            │ bhuwicburjiyplsotzqo             │
-│ Raceseo's Org / Verinode        │ INTYCO HOMPAGE DB org (추정)     │
-│ MCP로 관리                      │ Ray 계정으로 접근 불가           │
-│ dev 서버·prod 앱 모두 사용 대상 │ Lovable이 repo .env에 계속 주입 │
+│ okeeihfmagfogvuxzszb            │ erkmtsgrbsjdudiofuxw             │
+│ 서울 ap-northeast-2             │ ap-south-1 / INACTIVE            │
+│ .env·배포본이 이걸 가리킴       │ 과거 MCP 관리 대상, 현재 미사용  │
+│ ⚠️ MCP 접근 불가 → SQL Editor 직접│ MCP 접근 가능하나 앱과 무관       │
 └─────────────────────────────────┴──────────────────────────────────┘
 ```
 
-**두 Supabase는 완전 분리되어 동기화되지 않습니다.** Lovable AI가 DB 작업을 실행하면 bhuwi에 반영되고 Ray prod(erkmt)엔 영향이 없습니다.
+**현재 앱(dev·배포본)은 서울 프로젝트 `okeeihfmagfogvuxzszb`를 사용합니다.** 이 프로젝트는 Claude Code의 MCP로 접근되지 않으므로, DB 변경은 **마이그레이션 SQL 파일을 작성 → Ray가 Supabase SQL Editor에서 직접 실행**하는 방식으로 진행합니다. (구 prod `erkmtsgrbsjdudiofuxw`는 INACTIVE 상태로 더 이상 사용하지 않습니다. Lovable 런타임 관련 과거 이력은 `docs/lovable-supabase-sync.md` 참조)
 
 ## AI Assistant별 사용 규칙
 
@@ -32,10 +32,12 @@
 - **피할 것**: DB 스키마 변경 요청 — bhuwi에 가므로 Ray prod에 무영향
 - **피할 것**: `.env` 편집 요청 — Lovable이 자동 관리로 거부
 
-### ✅ Claude Code (이 assistant) + Supabase MCP
-- **OK**: Ray의 실제 prod(erkmt) DB 모든 작업
-- **OK**: 복잡한 다중 파일 수정·마이그레이션 관리·PR 생성
-- **MCP 도구**: `mcp__*__apply_migration`, `mcp__*__execute_sql` 등 — erkmt 프로젝트 ID 사용 (`erkmtsgrbsjdudiofuxw`)
+### ✅ Claude Code (이 assistant)
+- **OK**: 복잡한 다중 파일 수정·마이그레이션 파일 작성·PR 생성
+- **DB 변경**: 서울 prod(`okeeihfmagfogvuxzszb`)는 MCP 접근 불가 →
+  `supabase/migrations/`에 SQL 파일 작성 후 **Ray가 SQL Editor에서 직접 실행**.
+  Claude Code가 DB에 직접 실행하지 않음.
+- **MCP 도구**: 구 프로젝트 `erkmtsgrbsjdudiofuxw`(INACTIVE)에만 접근 가능 — 앱과 무관하므로 사용하지 않음.
 
 ### 원칙
 1. DB 변경은 **항상 Claude Code/MCP**를 통해 erkmt에 apply
@@ -92,5 +94,6 @@ Claude Code에게 말하기. Claude Code가 MCP로 erkmt에 apply하고 마이�
 2. RLS 정책에 USING (true) / WITH CHECK (true) 금지 (공개 읽기 전용 SELECT만 예외)
 3. SECURITY DEFINER 함수 생성 시 같은 마이그레이션에서 REVOKE EXECUTE ... FROM PUBLIC, anon, authenticated 후 필요한 역할에만 GRANT할 것
 4. VN잔액 변경은 Edge Function(service_role) 경유만 허용. 프론트엔드(src/)에서 잔액 변경 RPC 직접 호출 금지
+   - vn_balance는 DB 트리거로도 보호됨(protect_vn_balance) — profiles.vn_balance 직접 UPDATE는 service_role 외 차단(2026-07-26 적용)
 5. DB 스키마 변경 작업 후 Supabase Advisor 경고 0건 확인을 완료 기준에 포함할 것
 6. 관리자 2인 승인 로직은 어떤 리팩토링에서도 제거·우회 금지
