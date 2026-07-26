@@ -4,6 +4,13 @@
 -- 실행: MCP 접근 불가 → Ray가 Supabase SQL Editor에서 직접 실행
 -- 작성: Claude Code (2026-07-26)
 --
+-- 시공 경과 (2026-07-26, 실DB 적용 완료):
+--  · 1차 실행이 "already exists"로 실패 → 서울 DB에 옛 설계의 유령 테이블
+--    surveys(빈 것) + 그에 묶인 survey_targets(빈 것)이 이미 존재함을 확인.
+--  · 두 유령 테이블을 DROP(FK 때문에 survey_targets 먼저) 후 본 SQL 재실행 → 성공.
+--  · 검증: 테이블 2개(surveys, survey_questions) + SELECT 정책 2개
+--    (authenticated_read_active_surveys / authenticated_read_active_survey_questions) 확인 완료.
+--
 -- 보안 규칙(CLAUDE.md) 준수 사항:
 --  · #1 새 테이블은 같은 마이그레이션에서 RLS 활성화 + 정책 포함
 --  · #2 USING(true)/WITH CHECK(true) 금지 → 쓰기 정책을 만들지 않고
