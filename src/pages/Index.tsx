@@ -44,6 +44,14 @@ const Index = () => {
     if (isLoading) return;
 
     if (profile?.onboarding_completed) {
+      // ✅ 설문 딥링크(?surveyId): 공급자는 /dashboard 로 튕기지 않고 SupplierLayout 으로 진입시켜 설문을 연다.
+      //    (SupplierLayout 이 window.location.search 에서 surveyId 를 읽어 DB 설문 모드로 들어감)
+      const hasSurveyDeepLink = new URLSearchParams(window.location.search).has('surveyId');
+      if (hasSurveyDeepLink && profile.user_type !== 'enterprise') {
+        setUserMode('supplier');
+        setOnboardingStep('complete');
+        return;
+      }
       navigate(profile.user_type === 'enterprise' ? '/enterprise' : '/dashboard', { replace: true });
       return;
     }

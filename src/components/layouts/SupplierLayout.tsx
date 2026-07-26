@@ -52,11 +52,12 @@ const SupplierLayout = ({ onSwitchToDemand }: SupplierLayoutProps) => {
   const [activeTab, setActiveTab] = useState<SupplierTabType>("home");
   const [showCelebration, setShowCelebration] = useState(false);
   const [lastEarnedPoints, setLastEarnedPoints] = useState(0);
-  const [currentView, setCurrentView] = useState<InternalView>('main');
-  const [selectedEarning, setSelectedEarning] = useState<any>(null);
 
-  // ✅ DB 설문 딥링크: URL 에 ?surveyId=<uuid> 가 있으면 AntiCherryPicker 를 DB 설문 모드로 진입
+  // ✅ DB 설문 딥링크: URL 에 ?surveyId=<uuid> 가 있으면 AntiCherryPicker 를 DB 설문 모드로 바로 진입.
+  //    (연동 유도 화면 dataLinkPrompt 는 건너뜀 — DB 설문 모드는 마이데이터 자동완성을 쓰지 않으므로.)
   const dbSurveyId = new URLSearchParams(window.location.search).get('surveyId') ?? undefined;
+  const [currentView, setCurrentView] = useState<InternalView>(dbSurveyId ? 'antiCherryPicker' : 'main');
+  const [selectedEarning, setSelectedEarning] = useState<any>(null);
 
   const handleEarnPoints = (points: number) => {
     setLastEarnedPoints(points);
