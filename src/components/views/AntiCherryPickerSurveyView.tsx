@@ -82,6 +82,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
   const [charCount, setCharCount] = useState(0);
   const mouseTrajectory = useRef<MouseTrajectory[]>([]);
   const lastInputTime = useRef<number>(Date.now());
+  const isSavingRef = useRef(false); // 설문 응답 중복 저장 방지(제출 중/완료 시 재호출 차단)
 
   // ✅ DB 설문 모드: surveyId 가 있으면 survey_questions 에서 문항을 읽어온다.
   const isDbSurveyMode = !!surveyId;
@@ -334,13 +335,25 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
   // ✅ DB 설문 모드: 응답을 survey_responses 에 저장 (VN 적립 없음 — 구간④에서 Edge Function으로 별도 처리)
   const saveSurveyResponses = async () => {
     if (!surveyId) return;
+    // 멱등 가드: 이미 저장이 진행/완료됐으면 재실행하지 않음(StrictMode 이중 발화·이벤트 중복 대비)
+    if (isSavingRef.current) return;
+    isSavingRef.current = true;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      // ✅ 요청에 실제로 실리는 세션(JWT)의 유저를 user_id 로 사용 → RLS(auth.uid() = user_id) 통과 보장.
+      //    세션이 없으면(만료/미로그인) 저장을 시도하지 않고 명시적으로 중단한다.
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session?.user) {
+        console.error("설문 응답 저장 중단: 유효한 세션 없음", sessionError);
+        toast({ title: "로그인이 필요합니다", description: "세션이 만료되었어요. 다시 로그인 후 시도해주세요.", variant: "destructive" });
+        isSavingRef.current = false; // 세션 없음 → 재시도 허용
+        return;
+      }
+      const uid = session.user.id;
+
       const rows: SurveyResponseInsert[] = answers.map((a) => {
         const q = surveyQuestions.find((sq) => sq.id === a.questionId);
         return {
-          user_id: user.id,
+          user_id: uid,               // 세션 uid (= auth.uid())
           survey_id: surveyId,
           survey_question_id: q?.dbId ?? null,
           question_id: a.questionId, // order_no 저장(question_id 는 INTEGER)
@@ -354,37 +367,43 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
       // types.ts(생성본)에 survey_id/survey_question_id 컬럼이 아직 없어 캐스팅 필요.
       const { error } = await supabase.from("survey_responses").insert(rows as never);
       if (error) {
-        console.error("설문 응답 저장 실패:", error);
-        toast({ title: "응답 저장 실패", description: "네트워크 확인 후 다시 시도해주세요.", variant: "destructive" });
+        // 42501 재발 시 hint/details 로 원인 좁히기
+        console.error("설문 응답 저장 실패:", {
+          code: error.code, message: error.message,
+          details: error.details, hint: error.hint, payloadUserId: uid,
+        });
+        toast({ title: "응답 저장 실패", description: error.message, variant: "destructive" });
+        isSavingRef.current = false; // 실패 → 재시도 허용
         return;
       }
+      // 성공 시 isSavingRef 는 true 로 유지 → 이후 재호출로 인한 중복 저장 방지
       toast({ title: "✅ 응답이 제출되었습니다", description: `${rows.length}개 응답 저장 완료` });
     } catch (e) {
       console.error("설문 응답 저장 오류:", e);
+      isSavingRef.current = false; // 예외 → 재시도 허용
     }
   };
 
+  // ① 진행률 애니메이션 — 순수 증가만(updater 안에서 side effect 호출 금지: StrictMode 이중 발화 방지)
   useEffect(() => {
-    if (currentStep === "security_scan") {
-      const progressInterval = setInterval(() => {
-        setScanProgress(prev => {
-          if (prev >= 100) {
-            clearInterval(progressInterval);
-            // DB 설문 모드는 응답만 저장(VN 적립 없음), 인증 모드는 기존대로 프로필 인증
-            if (isDbSurveyMode) {
-              saveSurveyResponses().then(() => setCurrentStep("complete"));
-            } else {
-              updateProfileVerification().then(() => setCurrentStep("complete"));
-            }
-            return 100;
-          }
-          return prev + 0.5;
-        });
-      }, 50);
-      const stageInterval = setInterval(() => setScanStage(prev => (prev + 1) % 5), 2000);
-      return () => { clearInterval(progressInterval); clearInterval(stageInterval); };
+    if (currentStep !== "security_scan") return;
+    const progressInterval = setInterval(() => {
+      setScanProgress(prev => Math.min(prev + 0.5, 100));
+    }, 50);
+    const stageInterval = setInterval(() => setScanStage(prev => (prev + 1) % 5), 2000);
+    return () => { clearInterval(progressInterval); clearInterval(stageInterval); };
+  }, [currentStep]);
+
+  // ② 진행률 100% 도달 시 저장/인증을 1회만 실행. saveSurveyResponses 의 isSavingRef 가드가 중복을 최종 차단.
+  useEffect(() => {
+    if (currentStep !== "security_scan" || scanProgress < 100) return;
+    // DB 설문 모드는 응답만 저장(VN 적립 없음), 인증 모드는 기존대로 프로필 인증
+    if (isDbSurveyMode) {
+      saveSurveyResponses().then(() => setCurrentStep("complete"));
+    } else {
+      updateProfileVerification().then(() => setCurrentStep("complete"));
     }
-  }, [currentStep, isDbSurveyMode]);
+  }, [currentStep, scanProgress, isDbSurveyMode]);
 
   const handlePledgeSubmit = () => {
     if (pledgeName.length < 2) {
