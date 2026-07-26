@@ -83,3 +83,26 @@ export type SurveyQuestionPublic = Omit<SurveyQuestionRow, "is_trap">;
 /** survey_questions 를 authenticated 로 조회할 때 사용할 안전 컬럼 목록 */
 export const SURVEY_QUESTION_PUBLIC_COLUMNS =
   "id, survey_id, order_no, question_text, question_type, options, created_at" as const;
+
+// ─── survey_responses (survey_id / survey_question_id 확장분) ────────────────
+// ⚠️ 생성본 types.ts 의 survey_responses 에는 아직 survey_id / survey_question_id 가
+//    없어(마이그레이션 20260726130000 으로 DB에만 추가됨), insert 시 타입 에러가 남.
+//    Lovable 이 types.ts 를 재생성하기 전까지는 아래 타입으로 캐스팅해 사용할 것.
+export interface SurveyResponseInsert {
+  user_id: string;
+  survey_id: string | null;
+  survey_question_id?: string | null;
+  question_id: number;                 // DB 설문 모드에서는 order_no 를 저장
+  question_text?: string | null;
+  answer?: string | null;
+  time_spent?: number | null;
+  typing_speed?: number | null;
+  verification_id?: string | null;     // 설문 모드에서는 null
+  created_at?: string;
+}
+
+export interface SurveyResponseRow extends SurveyResponseInsert {
+  id: string;
+  survey_id: string | null;
+  created_at: string;
+}

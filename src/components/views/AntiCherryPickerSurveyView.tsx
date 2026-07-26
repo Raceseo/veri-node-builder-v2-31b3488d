@@ -12,10 +12,16 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  SURVEY_QUESTION_PUBLIC_COLUMNS,
+  type SurveyResponseInsert,
+} from "@/integrations/supabase/types.survey";
 
 interface AntiCherryPickerSurveyViewProps {
   onBack: () => void;
   onComplete: () => void;
+  /** 있으면 "DB 설문 모드": survey_questions 에서 문항을 읽고 survey_responses 에 저장. 없으면 기존 AI 인증 모드. */
+  surveyId?: string;
 }
 
 type SurveyStep = "ethics_pledge" | "generating_questions" | "survey" | "cross_verify" | "security_scan" | "complete";
@@ -25,6 +31,7 @@ interface SurveyQuestion {
   text: string;
   type?: string;
   targetSource?: string;
+  dbId?: string; // DB 설문 모드에서의 survey_questions.id(uuid)
 }
 
 interface SurveyAnswer {
@@ -52,7 +59,7 @@ interface LinkedDataSummary {
   transactionCategories: string[];
 }
 
-const AntiCherryPickerSurveyView = ({ onBack, onComplete }: AntiCherryPickerSurveyViewProps) => {
+const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherryPickerSurveyViewProps) => {
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState<SurveyStep>("ethics_pledge");
   const [pledgeName, setPledgeName] = useState("");
@@ -76,10 +83,14 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete }: AntiCherryPickerSurv
   const mouseTrajectory = useRef<MouseTrajectory[]>([]);
   const lastInputTime = useRef<number>(Date.now());
 
-  // ✅ 마이데이터 연동 여부 판단
+  // ✅ DB 설문 모드: surveyId 가 있으면 survey_questions 에서 문항을 읽어온다.
+  const isDbSurveyMode = !!surveyId;
+
+  // ✅ 마이데이터 연동 여부 판단 (DB 설문 모드에서는 자동완성 분기를 끔)
   const isFullyLinked =
-    (linkedData?.financial?.length ?? 0) > 0 ||
-    (linkedData?.government?.length ?? 0) > 0;
+    !isDbSurveyMode &&
+    ((linkedData?.financial?.length ?? 0) > 0 ||
+      (linkedData?.government?.length ?? 0) > 0);
 
   const fetchLinkedData = async (userId: string): Promise<LinkedDataSummary> => {
     const [mydataRes, govdataRes, profileRes, transactionsRes] = await Promise.all([
@@ -123,6 +134,26 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete }: AntiCherryPickerSurv
       console.error("Question generation error:", error);
       return getDefaultQuestions(data);
     }
+  };
+
+  // ✅ DB 설문 모드: survey_questions 에서 문항 조회 (is_trap 미노출 — 안전 컬럼만 select)
+  const fetchDbQuestions = async (sid: string): Promise<SurveyQuestion[]> => {
+    // types.ts(생성본)에 surveys/survey_questions 가 아직 없어 캐스팅 필요.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb = supabase as any;
+    const { data, error } = await sb
+      .from("survey_questions")
+      .select(SURVEY_QUESTION_PUBLIC_COLUMNS)
+      .eq("survey_id", sid)
+      .order("order_no", { ascending: true });
+    if (error) throw error;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (data ?? []).map((row: any) => ({
+      id: row.order_no,
+      text: row.question_text,
+      type: row.question_type,
+      dbId: row.id,
+    }));
   };
 
   const getDefaultQuestions = (data: LinkedDataSummary): SurveyQuestion[] => {
@@ -176,7 +207,31 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete }: AntiCherryPickerSurv
   }, []);
 
   useEffect(() => {
-    if (currentStep === "generating_questions" && linkedData) {
+    if (currentStep !== "generating_questions") return;
+
+    // ✅ DB 설문 모드: survey_questions 에서 문항 로드 후 곧바로 survey 단계로
+    if (isDbSurveyMode && surveyId) {
+      let cancelled = false;
+      setGenerationStage("설문 문항 불러오는 중...");
+      setGenerationProgress(30);
+      fetchDbQuestions(surveyId)
+        .then((questions) => {
+          if (cancelled) return;
+          setGenerationProgress(100);
+          setSurveyQuestions(questions);
+          setCurrentStep("survey");
+          setQuestionStartTime(Date.now());
+        })
+        .catch((e) => {
+          if (cancelled) return;
+          console.error("DB 설문 문항 로드 실패:", e);
+          toast({ title: "설문을 불러오지 못했습니다", description: "잠시 후 다시 시도해주세요.", variant: "destructive" });
+          onBack();
+        });
+      return () => { cancelled = true; };
+    }
+
+    if (linkedData) {
       const stages = [
         "연동 데이터 분석 중...", "금융 정보 기반 질문 생성 중...",
         "정부 데이터 기반 질문 생성 중...", "거래 패턴 분석 중...", "맞춤형 질문 최종 검토 중..."
@@ -231,7 +286,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete }: AntiCherryPickerSurv
       });
       return () => clearInterval(progressInterval);
     }
-  }, [currentStep, linkedData]);
+  }, [currentStep, linkedData, isDbSurveyMode, surveyId]);
 
   const updateProfileVerification = async () => {
     setIsUpdatingProfile(true);
@@ -248,6 +303,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete }: AntiCherryPickerSurv
       const currentTrustScore = currentProfile?.trust_score || 65;
       const newBalance = currentBalance + VERIFICATION_REWARD;
       const newTrustScore = Math.min(currentTrustScore + (isFullyLinked ? 15 : 5), 100);
+      // TODO 구간④: Edge Function 경유로 교체 — 프론트에서 vn_balance 직접 수정 금지(보안 규칙 #4, protect_vn_balance 트리거와도 충돌)
       await supabase.from('profiles').update({
         is_verified: true, vn_balance: newBalance,
         trust_score: newTrustScore, updated_at: new Date().toISOString()
@@ -275,13 +331,51 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete }: AntiCherryPickerSurv
     }
   };
 
+  // ✅ DB 설문 모드: 응답을 survey_responses 에 저장 (VN 적립 없음 — 구간④에서 Edge Function으로 별도 처리)
+  const saveSurveyResponses = async () => {
+    if (!surveyId) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const rows: SurveyResponseInsert[] = answers.map((a) => {
+        const q = surveyQuestions.find((sq) => sq.id === a.questionId);
+        return {
+          user_id: user.id,
+          survey_id: surveyId,
+          survey_question_id: q?.dbId ?? null,
+          question_id: a.questionId, // order_no 저장(question_id 는 INTEGER)
+          question_text: a.question,
+          answer: a.answer,
+          time_spent: a.timeSpent,
+          typing_speed: a.typingSpeed,
+          verification_id: null,     // 설문 모드는 verification_history 와 무관
+        };
+      });
+      // types.ts(생성본)에 survey_id/survey_question_id 컬럼이 아직 없어 캐스팅 필요.
+      const { error } = await supabase.from("survey_responses").insert(rows as never);
+      if (error) {
+        console.error("설문 응답 저장 실패:", error);
+        toast({ title: "응답 저장 실패", description: "네트워크 확인 후 다시 시도해주세요.", variant: "destructive" });
+        return;
+      }
+      toast({ title: "✅ 응답이 제출되었습니다", description: `${rows.length}개 응답 저장 완료` });
+    } catch (e) {
+      console.error("설문 응답 저장 오류:", e);
+    }
+  };
+
   useEffect(() => {
     if (currentStep === "security_scan") {
       const progressInterval = setInterval(() => {
         setScanProgress(prev => {
           if (prev >= 100) {
             clearInterval(progressInterval);
-            updateProfileVerification().then(() => setCurrentStep("complete"));
+            // DB 설문 모드는 응답만 저장(VN 적립 없음), 인증 모드는 기존대로 프로필 인증
+            if (isDbSurveyMode) {
+              saveSurveyResponses().then(() => setCurrentStep("complete"));
+            } else {
+              updateProfileVerification().then(() => setCurrentStep("complete"));
+            }
             return 100;
           }
           return prev + 0.5;
@@ -290,7 +384,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete }: AntiCherryPickerSurv
       const stageInterval = setInterval(() => setScanStage(prev => (prev + 1) % 5), 2000);
       return () => { clearInterval(progressInterval); clearInterval(stageInterval); };
     }
-  }, [currentStep]);
+  }, [currentStep, isDbSurveyMode]);
 
   const handlePledgeSubmit = () => {
     if (pledgeName.length < 2) {

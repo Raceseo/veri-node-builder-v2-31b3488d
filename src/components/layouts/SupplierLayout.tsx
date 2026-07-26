@@ -55,6 +55,9 @@ const SupplierLayout = ({ onSwitchToDemand }: SupplierLayoutProps) => {
   const [currentView, setCurrentView] = useState<InternalView>('main');
   const [selectedEarning, setSelectedEarning] = useState<any>(null);
 
+  // ✅ DB 설문 딥링크: URL 에 ?surveyId=<uuid> 가 있으면 AntiCherryPicker 를 DB 설문 모드로 진입
+  const dbSurveyId = new URLSearchParams(window.location.search).get('surveyId') ?? undefined;
+
   const handleEarnPoints = (points: number) => {
     setLastEarnedPoints(points);
     setShowCelebration(true);
@@ -122,6 +125,7 @@ const SupplierLayout = ({ onSwitchToDemand }: SupplierLayoutProps) => {
             <AntiCherryPickerSurveyView
               onBack={handleBackToMain}
               onComplete={handleBackToMain}
+              surveyId={dbSurveyId}
             />
           </Suspense>
         );
