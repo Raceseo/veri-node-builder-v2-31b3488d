@@ -77,7 +77,8 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
   const [generationProgress, setGenerationProgress] = useState(0);
   const [generationStage, setGenerationStage] = useState("");
   const [surveyQuestions, setSurveyQuestions] = useState<SurveyQuestion[]>([]);
-  
+  const [rewardVn, setRewardVn] = useState<number | null>(null); // DB 설문 모드: surveys.reward_vn 실제 보상값
+
   const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
   const [charCount, setCharCount] = useState(0);
   const mouseTrajectory = useRef<MouseTrajectory[]>([]);
@@ -215,11 +216,16 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
       let cancelled = false;
       setGenerationStage("설문 문항 불러오는 중...");
       setGenerationProgress(30);
-      fetchDbQuestions(surveyId)
-        .then((questions) => {
+      Promise.all([
+        fetchDbQuestions(surveyId),
+        // 보상 문구 실값 표시용 reward_vn 동시 조회. eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any).from("surveys").select("reward_vn").eq("id", surveyId).single(),
+      ])
+        .then(([questions, rewardRes]) => {
           if (cancelled) return;
           setGenerationProgress(100);
           setSurveyQuestions(questions);
+          setRewardVn(rewardRes?.data?.reward_vn ?? null);
           setCurrentStep("survey");
           setQuestionStartTime(Date.now());
         })
@@ -291,40 +297,32 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
 
   const updateProfileVerification = async () => {
     setIsUpdatingProfile(true);
-    // ✅ 마이데이터 연동 시 더 높은 보상
-    const VERIFICATION_REWARD = isFullyLinked ? 500 : 100;
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const { data: currentProfile, error: profileFetchError } = await supabase
-        .from('profiles').select('vn_balance, trust_score, is_verified').eq('id', user.id).single();
+        .from('profiles').select('trust_score, is_verified').eq('id', user.id).single();
       if (profileFetchError) return;
       if (currentProfile?.is_verified) { setCurrentStep("complete"); return; }
-      const currentBalance = currentProfile?.vn_balance || 0;
       const currentTrustScore = currentProfile?.trust_score || 65;
-      const newBalance = currentBalance + VERIFICATION_REWARD;
       const newTrustScore = Math.min(currentTrustScore + (isFullyLinked ? 15 : 5), 100);
-      // TODO 구간④: Edge Function 경유로 교체 — 프론트에서 vn_balance 직접 수정 금지(보안 규칙 #4, protect_vn_balance 트리거와도 충돌)
+      // ⚠️ 구간④-후속(TODO): 인증 모드 VN 보상은 아직 Edge Function 이관 전이라 지급 보류.
+      //    보안 규칙 #4 + protect_vn_balance 트리거로 프론트의 vn_balance 직접 수정은 금지/차단됨.
+      //    여기서는 인증(is_verified)·신뢰도(trust_score)만 갱신하고, 보상 지급은 후속 세션에서
+      //    claim-verification-reward(가칭) Edge Function 으로 이관 예정. (claim-survey-reward 참고)
       await supabase.from('profiles').update({
-        is_verified: true, vn_balance: newBalance,
+        is_verified: true,
         trust_score: newTrustScore, updated_at: new Date().toISOString()
       }).eq('id', user.id);
-      await supabase.from('transactions').insert({
-        user_id: user.id, type: 'verification_reward', amount: VERIFICATION_REWARD,
-        balance_before: currentBalance, balance_after: newBalance,
-        description: isFullyLinked ? '마이데이터 연동 인증 완료 보상' : '첫 인증 완료 보상',
-        reference_type: 'verification'
-      });
       await supabase.from('verification_history').insert({
         user_id: user.id, verification_type: 'identity_verification',
         trust_score_before: currentTrustScore, trust_score_after: newTrustScore,
-        score_change: isFullyLinked ? 15 : 5, vn_earned: VERIFICATION_REWARD,
-        result: { type: 'first_verification', passed: true, mydata_linked: isFullyLinked, timestamp: new Date().toISOString() }
+        score_change: isFullyLinked ? 15 : 5, vn_earned: 0, // 보상 이관 전까지 0 (reward_pending)
+        result: { type: 'first_verification', passed: true, mydata_linked: isFullyLinked, reward_pending: true, timestamp: new Date().toISOString() }
       });
       queryClient.invalidateQueries({ queryKey: ['profile', user.id] });
       queryClient.invalidateQueries({ queryKey: ['home-profile'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      toast({ title: `🎉 인증 완료! +${VERIFICATION_REWARD} VN`, description: `신뢰도 +${isFullyLinked ? 15 : 5}점 상승` });
+      toast({ title: "✅ 인증 완료!", description: `신뢰도 +${isFullyLinked ? 15 : 5}점 상승 (보상은 준비 중)` });
     } catch (error) {
       console.error("Verification update error:", error);
     } finally {
@@ -384,6 +382,34 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
     }
   };
 
+  // ✅ DB 설문 모드: 응답 저장 성공 후 보상 적립(Edge Function 경유 — service_role 로 vn_balance 변경).
+  //    중복/위조/응답실재는 모두 서버(claim-survey-reward)에서 검증한다.
+  const claimSurveyReward = async () => {
+    if (!surveyId) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("claim-survey-reward", {
+        body: { surveyId },
+      });
+      if (error) {
+        console.error("보상 적립 실패:", error);
+        toast({ title: "보상 적립 실패", description: "잔액은 잠시 후 반영될 수 있어요.", variant: "destructive" });
+        return;
+      }
+      if (data?.already_claimed) {
+        toast({ title: "이미 보상을 받은 설문입니다" });
+      } else if (data?.success) {
+        if (typeof data.reward_vn === "number") setRewardVn(data.reward_vn);
+        toast({ title: `🎉 +${(data.reward_vn ?? 0).toLocaleString()} VN 적립 완료`, description: `현재 잔액 ${(data.new_balance ?? 0).toLocaleString()} VN` });
+      }
+      // 잔액/거래 UI 갱신
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ["home-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    } catch (e) {
+      console.error("보상 적립 오류:", e);
+    }
+  };
+
   // ① 진행률 애니메이션 — 순수 증가만(updater 안에서 side effect 호출 금지: StrictMode 이중 발화 방지)
   useEffect(() => {
     if (currentStep !== "security_scan") return;
@@ -399,7 +425,10 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
     if (currentStep !== "security_scan" || scanProgress < 100) return;
     // DB 설문 모드는 응답만 저장(VN 적립 없음), 인증 모드는 기존대로 프로필 인증
     if (isDbSurveyMode) {
-      saveSurveyResponses().then(() => setCurrentStep("complete"));
+      // B-1: 응답 저장 성공 직후 별도로 보상 적립(Edge Function). 적립이 실패해도 응답은 남는다.
+      saveSurveyResponses()
+        .then(() => claimSurveyReward())
+        .then(() => setCurrentStep("complete"));
     } else {
       updateProfileVerification().then(() => setCurrentStep("complete"));
     }
@@ -844,6 +873,9 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
           </div>
           <h2 className="text-2xl font-bold text-slate-100 mb-2">무결성 검증 완료</h2>
           <p className="text-slate-400 mb-2">모든 보안 검사를 통과했습니다</p>
+          {isDbSurveyMode && rewardVn != null && (
+            <p className="text-green-400 text-sm font-semibold mb-6">🎉 설문 참여로 +{rewardVn.toLocaleString()} VN 지급!</p>
+          )}
           {isFullyLinked && (
             <p className="text-green-400 text-sm font-semibold mb-6">🎉 마이데이터 연동으로 +500 VN 지급!</p>
           )}
@@ -873,7 +905,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
             onClick={onComplete}
             className="w-full h-14 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-semibold"
           >
-            완료하고 보상 받기 (+{isFullyLinked ? 500 : 100} VN)
+            완료하고 보상 받기 (+{(isDbSurveyMode ? (rewardVn ?? 0) : (isFullyLinked ? 500 : 100)).toLocaleString()} VN)
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
         </div>
