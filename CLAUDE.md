@@ -85,6 +85,9 @@ Claude Code에게 말하기. Claude Code가 MCP로 erkmt에 apply하고 마이�
 
 ## 수요 검증 Go 판정 후 재개할 과제
 
+- **구간④-후속: 인증 모드 보상 Edge Function 이관** — `updateProfileVerification`(src/components/views/AntiCherryPickerSurveyView.tsx)은 현재 인증(is_verified)·신뢰도(trust_score)만 갱신하고 VN 보상은 미지급 상태(verification_history.vn_earned=0, result.reward_pending=true). 보안 규칙 #4/protect_vn_balance 때문에 프론트 직접 vn_balance 수정 불가. 설문 보상용 `supabase/functions/claim-survey-reward`를 참고해 `claim-verification-reward`(가칭)를 신설·이관해야 함.
+- **구간④ UI 후속(경미): 적립 후 화면 잔액 즉시 미갱신** — `claimSurveyReward` 성공 후 `queryClient.invalidateQueries(['profile']/['home-profile']/['transactions'])`를 호출하나 홈 화면 VN 잔액이 즉시 반영되지 않음. 잔액을 표시하는 쪽(ProfileContext 등)이 구독하는 쿼리 키와 무효화 키의 정합성 점검 필요.
+- **재발 방지 기록(서울 문서≠실물): user_rewards UNIQUE(user_id) 누락** — `sync_total_earned` 트리거가 `ON CONFLICT (user_id)`로 `user_rewards`를 UPSERT하는데 서울 실물에 UNIQUE(user_id)가 없어 **transactions insert마다 42P10으로 실패** → 설문 보상뿐 아니라 **충전·출금·데이터 판매 등 모든 거래 기재가 깨지던** 광범위 버그였음. 2026-07-27 UNIQUE 추가로 해소(마이그레이션 `20260727140000`). **교훈**: 서울 실물은 트리거가 의존하는 제약이 문서 없이 누락돼 있을 수 있으니, 거래 관련 함수 도입 전 관련 트리거·제약을 `pg_constraint`로 실물 확인할 것.
 - 로컬 파일 36개 중 실제 apply 안 된 마이그레이션 식별 (data_access_requests·data_listings 등 Dashboard용)
 - `has_role(uuid, text)` 함수 erkmt에 정의
 - Auth.tsx에 "사전 신청" CTA 연결 (Google Form URL 확보 후)
