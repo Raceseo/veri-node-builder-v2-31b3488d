@@ -12,23 +12,15 @@ import { Switch } from "@/components/ui/switch";
 import { motion, AnimatePresence } from "framer-motion";
 import RollingNumber from "@/components/animations/RollingNumber";
 import SNSLinkageSheet, { SNSData } from "@/components/sheets/SNSLinkageSheet";
+import { useAuth } from "@/hooks/useAuth";
+import { useActiveSurveys } from "@/hooks/useActiveSurveys";
 
 interface SupplierEarnTabProps {
   trustScore?: number;
   isVerified?: boolean;
-  onStartSurvey?: () => void;
+  /** 구간②: 실제 설문 카드 클릭 시 해당 surveyId 로 DB 설문 모드 진입 */
+  onStartSurvey?: (surveyId: string) => void;
   onEarnPoints?: (points: number) => void;
-}
-
-interface SurveyItem {
-  id: string;
-  title: string;
-  reward: number;
-  duration: string;
-  category: string;
-  urgency: 'normal' | 'urgent' | 'premium';
-  progress?: number;
-  totalQuestions?: number;
 }
 
 interface DataConnectionItem {
@@ -47,36 +39,6 @@ interface SNSPlatformConfig {
   monthlyVN: number;
 }
 
-const mockSurveys: SurveyItem[] = [
-  {
-    id: "1",
-    title: "2024 소비 패턴 조사",
-    reward: 3500,
-    duration: "3분",
-    category: "소비",
-    urgency: "urgent",
-    totalQuestions: 8,
-  },
-  {
-    id: "2", 
-    title: "디지털 서비스 만족도",
-    reward: 2000,
-    duration: "2분",
-    category: "IT",
-    urgency: "normal",
-    totalQuestions: 5,
-  },
-  {
-    id: "3",
-    title: "금융 투자 성향 분석",
-    reward: 5000,
-    duration: "5분",
-    category: "금융",
-    urgency: "premium",
-    totalQuestions: 12,
-  },
-];
-
 const dataConnections: DataConnectionItem[] = [
   { id: "bank", name: "은행 계좌", icon: "🏦", connected: true, monthlyRevenue: 15000 },
   { id: "card", name: "카드 내역", icon: "💳", connected: true, monthlyRevenue: 12000 },
@@ -91,6 +53,9 @@ const SupplierEarnTab = ({
   onStartSurvey,
   onEarnPoints,
 }: SupplierEarnTabProps) => {
+  const { user } = useAuth();
+  const { data: surveys = [], isLoading: surveysLoading } = useActiveSurveys(user?.id);
+
   const [earnedToday, setEarnedToday] = useState(0);
   const [connections, setConnections] = useState(dataConnections);
   const [showRewardAnimation, setShowRewardAnimation] = useState(false);
@@ -135,10 +100,6 @@ const SupplierEarnTab = ({
     setConnections(prev => 
       prev.map(c => c.id === id ? { ...c, connected: !c.connected } : c)
     );
-  };
-
-  const handleStartSurvey = (survey: SurveyItem) => {
-    onStartSurvey?.();
   };
 
   const simulateEarn = (amount: number) => {
@@ -204,7 +165,7 @@ const SupplierEarnTab = ({
         </Card>
       </motion.div>
 
-      {/* 설문 카드 섹션 */}
+      {/* 설문 카드 섹션 — 실제 DB active 설문 (구간②) */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
@@ -212,77 +173,87 @@ const SupplierEarnTab = ({
             참여 가능한 설문
           </h2>
           <Badge variant="secondary" className="text-xs">
-            {mockSurveys.length}개
+            {surveys.length}개
           </Badge>
         </div>
 
-        {mockSurveys.map((survey, index) => (
-          <motion.div
-            key={survey.id}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.1 }}
-          >
-            <Card 
-              className={`p-4 cursor-pointer transition-all hover:shadow-lg ${
-                survey.urgency === 'urgent' 
-                  ? 'border-destructive/50 bg-destructive/5' 
-                  : survey.urgency === 'premium'
-                  ? 'border-gold/50 bg-gold/5'
-                  : 'border-border'
-              }`}
-              onClick={() => handleStartSurvey(survey)}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    {survey.urgency === 'urgent' && (
-                      <Badge className="bg-destructive text-white text-[10px] px-1.5 py-0">
-                        <Zap className="w-2.5 h-2.5 mr-0.5" />
-                        긴급
-                      </Badge>
-                    )}
-                    {survey.urgency === 'premium' && (
-                      <Badge className="bg-gold text-navy text-[10px] px-1.5 py-0">
-                        <Star className="w-2.5 h-2.5 mr-0.5" />
-                        프리미엄
-                      </Badge>
-                    )}
-                    <Badge variant="outline" className="text-[10px]">
-                      {survey.category}
-                    </Badge>
-                  </div>
-                  <h3 className="font-semibold text-foreground">{survey.title}</h3>
-                  <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {survey.duration}
-                    </span>
-                    <span>{survey.totalQuestions}문항</span>
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <p className="text-xl font-bold text-gold">
-                    +{survey.reward.toLocaleString()}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">VN</p>
-                </div>
-              </div>
-
-              <Button 
-                className="w-full bg-primary hover:bg-primary/90"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleStartSurvey(survey);
-                }}
+        {surveysLoading ? (
+          <Card className="p-6 text-center text-sm text-muted-foreground">
+            설문을 불러오는 중...
+          </Card>
+        ) : surveys.length === 0 ? (
+          <Card className="p-8 text-center">
+            <Gift className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
+            <p className="text-sm font-medium text-foreground mb-1">지금은 참여 가능한 설문이 없어요</p>
+            <p className="text-xs text-muted-foreground">새로운 설문이 등록되면 여기에서 바로 참여할 수 있어요.</p>
+          </Card>
+        ) : (
+          surveys.map((survey, index) => {
+            // 조건①: 문항당 15초, 올림 (목표 3분 설문 기준)
+            const estMinutes = Math.max(1, Math.ceil(survey.questionCount * 0.25));
+            return (
+              <motion.div
+                key={survey.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
               >
-                <Play className="w-4 h-4 mr-2" />
-                시작하기
-              </Button>
-            </Card>
-          </motion.div>
-        ))}
+                <Card
+                  className={`p-4 transition-all border-border ${
+                    survey.claimed ? 'opacity-60' : 'cursor-pointer hover:shadow-lg'
+                  }`}
+                  onClick={() => { if (!survey.claimed) onStartSurvey?.(survey.id); }}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      {survey.claimed && (
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge className="bg-success/20 text-success border-success/30 text-[10px] px-1.5 py-0">
+                            <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" />
+                            참여 완료
+                          </Badge>
+                        </div>
+                      )}
+                      <h3 className="font-semibold text-foreground">{survey.title}</h3>
+                      {survey.description && (
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{survey.description}</p>
+                      )}
+                      <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          약 {estMinutes}분
+                        </span>
+                        <span>{survey.questionCount}문항</span>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <p className="text-xl font-bold text-gold">
+                        +{survey.reward_vn.toLocaleString()}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">VN</p>
+                    </div>
+                  </div>
+
+                  <Button
+                    className="w-full bg-primary hover:bg-primary/90"
+                    disabled={survey.claimed}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!survey.claimed) onStartSurvey?.(survey.id);
+                    }}
+                  >
+                    {survey.claimed ? (
+                      <><CheckCircle2 className="w-4 h-4 mr-2" />참여 완료</>
+                    ) : (
+                      <><Play className="w-4 h-4 mr-2" />시작하기</>
+                    )}
+                  </Button>
+                </Card>
+              </motion.div>
+            );
+          })
+        )}
       </div>
 
       {/* SNS 연동 보너스 섹션 */}

@@ -58,6 +58,8 @@ const SupplierLayout = ({ onSwitchToDemand }: SupplierLayoutProps) => {
   const dbSurveyId = new URLSearchParams(window.location.search).get('surveyId') ?? undefined;
   const [currentView, setCurrentView] = useState<InternalView>(dbSurveyId ? 'antiCherryPicker' : 'main');
   const [selectedEarning, setSelectedEarning] = useState<any>(null);
+  // 구간②: 목록 카드에서 고른 설문 id (딥링크 dbSurveyId 와 같은 경로로 AntiCherryPicker 에 전달)
+  const [activeSurveyId, setActiveSurveyId] = useState<string | undefined>(undefined);
 
   const handleEarnPoints = (points: number) => {
     setLastEarnedPoints(points);
@@ -68,6 +70,13 @@ const SupplierLayout = ({ onSwitchToDemand }: SupplierLayoutProps) => {
   const handleBackToMain = () => {
     setCurrentView('main');
     setSelectedEarning(null);
+    setActiveSurveyId(undefined);
+  };
+
+  // 구간②: 설문 목록 카드 클릭 → DB 설문 모드로 진입 (AI 인증 모드 handleStartSurvey 와 별개)
+  const handleStartDbSurvey = (id: string) => {
+    setActiveSurveyId(id);
+    setCurrentView('antiCherryPicker');
   };
 
   const handleOpenRevenueSource = (earning: any) => {
@@ -126,7 +135,7 @@ const SupplierLayout = ({ onSwitchToDemand }: SupplierLayoutProps) => {
             <AntiCherryPickerSurveyView
               onBack={handleBackToMain}
               onComplete={handleBackToMain}
-              surveyId={dbSurveyId}
+              surveyId={activeSurveyId ?? dbSurveyId}
             />
           </Suspense>
         );
@@ -208,7 +217,7 @@ const SupplierLayout = ({ onSwitchToDemand }: SupplierLayoutProps) => {
           <SupplierEarnTab
             trustScore={trustScore}
             isVerified={isVerified}
-            onStartSurvey={handleStartSurvey}         // ✅ DataLinkPromptStep 먼저
+            onStartSurvey={handleStartDbSurvey}       // ✅ 구간②: surveyId 로 DB 설문 진입
             onEarnPoints={handleEarnPoints}
           />
         );

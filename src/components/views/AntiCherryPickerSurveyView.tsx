@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useProfileContext } from "@/contexts/ProfileContext";
 import {
   SURVEY_QUESTION_PUBLIC_COLUMNS,
   type SurveyResponseInsert,
@@ -61,6 +62,7 @@ interface LinkedDataSummary {
 
 const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherryPickerSurveyViewProps) => {
   const queryClient = useQueryClient();
+  const { refetch: refetchProfile } = useProfileContext();
   const [currentStep, setCurrentStep] = useState<SurveyStep>("ethics_pledge");
   const [pledgeName, setPledgeName] = useState("");
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -405,6 +407,11 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       queryClient.invalidateQueries({ queryKey: ["home-profile"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      // 조건②(경미 건): Realtime 반영이 지연될 수 있어, 프로필 쿼리를 명시적으로 강제 재조회.
+      //   화면 잔액이 새로고침 없이 갱신되는지는 브라우저 실측으로 확인 필요.
+      refetchProfile();
+      // 목록의 "참여 완료" 배지도 즉시 반영되도록 active-surveys 무효화
+      queryClient.invalidateQueries({ queryKey: ["active-surveys"] });
     } catch (e) {
       console.error("보상 적립 오류:", e);
     }
