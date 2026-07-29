@@ -546,7 +546,10 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
               ))}
             </div>
 
-            {/* ✅ 연동 데이터 요약 + 자동완성 안내 */}
+            {/* ✅ 연동 데이터 요약 + 자동완성 안내
+                구간F-1(E): DB 설문 모드는 마이데이터 자동완성을 쓰지 않으므로 이 박스(헤더 포함) 전체를 숨김.
+                헤더 "연동 데이터 기반 설문이 생성됩니다"·"보상 5배" 모두 DB 설문엔 거짓이라 통째로 제외. */}
+            {!isDbSurveyMode && (
             <div className={`rounded-xl p-4 border mb-4 ${isFullyLinked ? "bg-green-500/5 border-green-500/30" : "bg-slate-900/50 border-blue-500/20"}`}>
               <div className="flex items-center gap-2 mb-3">
                 {isFullyLinked
@@ -598,6 +601,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
                 </div>
               )}
             </div>
+            )}
 
             <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-600">
               <label className="block text-sm text-slate-400 mb-2">서약자 이름 (정자로 기입)</label>
@@ -945,34 +949,23 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
           <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center animate-scale-in">
             <ShieldCheck className="w-12 h-12 text-white" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-100 mb-2">무결성 검증 완료</h2>
-          <p className="text-slate-400 mb-2">모든 보안 검사를 통과했습니다</p>
+          {/* 구간F-1(C-2): 판정 근거 없는 "무결성/보안 통과" 단정 → 사실 문구로 교체(Ray 승인 후보③ 확정). */}
+          <h2 className="text-2xl font-bold text-slate-100 mb-2">응답 제출 완료</h2>
+          <p className="text-slate-400 mb-2">소중한 응답 감사합니다</p>
           {isDbSurveyMode && rewardVn != null && (
             <p className="text-green-400 text-sm font-semibold mb-6">🎉 설문 참여로 +{rewardVn.toLocaleString()} VN 지급!</p>
           )}
           {isFullyLinked && (
             <p className="text-green-400 text-sm font-semibold mb-6">🎉 마이데이터 연동으로 +500 VN 지급!</p>
           )}
+          {/* 구간F-1(C-1): 판정 로직 없는 고정 연출(신뢰도 +점 / 응답 일관성 92% / 복사 탐지 미탐지) 제거.
+              '데이터 방식(직접 입력)'만 사실이므로 단독 유지. */}
           <div className="bg-slate-800/50 border border-green-500/30 rounded-2xl p-6 mb-6">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div className="bg-slate-900/50 rounded-xl p-4">
-                <p className="text-slate-500 text-xs mb-1">데이터 방식</p>
-                <p className={`font-semibold ${isFullyLinked ? "text-green-400" : "text-blue-400"}`}>
-                  {isFullyLinked ? "마이데이터 연동" : "직접 입력"}
-                </p>
-              </div>
-              <div className="bg-slate-900/50 rounded-xl p-4">
-                <p className="text-slate-500 text-xs mb-1">신뢰도 상승</p>
-                <p className="text-green-400 font-semibold">+{isFullyLinked ? 15 : 5}점</p>
-              </div>
-              <div className="bg-slate-900/50 rounded-xl p-4">
-                <p className="text-slate-500 text-xs mb-1">응답 일관성</p>
-                <p className="text-green-400 font-semibold">92% 일치</p>
-              </div>
-              <div className="bg-slate-900/50 rounded-xl p-4">
-                <p className="text-slate-500 text-xs mb-1">복사 탐지</p>
-                <p className="text-green-400 font-semibold">미탐지</p>
-              </div>
+            <div className="bg-slate-900/50 rounded-xl p-4">
+              <p className="text-slate-500 text-xs mb-1">데이터 방식</p>
+              <p className={`font-semibold ${isFullyLinked ? "text-green-400" : "text-blue-400"}`}>
+                {isFullyLinked ? "마이데이터 연동" : "직접 입력"}
+              </p>
             </div>
           </div>
           <Button
