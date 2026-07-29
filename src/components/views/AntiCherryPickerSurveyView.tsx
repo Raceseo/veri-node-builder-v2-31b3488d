@@ -33,6 +33,7 @@ interface SurveyQuestion {
   type?: string;
   targetSource?: string;
   dbId?: string; // DB 설문 모드에서의 survey_questions.id(uuid)
+  options?: string[]; // DB 설문 모드 객관식 보기. 배열 순서 = 화면 표시 순서(절대 정렬·셔플 금지)
 }
 
 interface SurveyAnswer {
@@ -68,6 +69,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<SurveyAnswer[]>([]);
   const [currentAnswer, setCurrentAnswer] = useState("");
+  const [selectedMulti, setSelectedMulti] = useState<string[]>([]); // multi_choice 선택 텍스트들(저장 시 JSON.stringify)
   const [crossVerifyIndex, setCrossVerifyIndex] = useState(0);
   const [crossVerifyAnswers, setCrossVerifyAnswers] = useState<string[]>([]);
   const [scanProgress, setScanProgress] = useState(0);
@@ -157,6 +159,8 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
       text: row.question_text,
       type: row.question_type,
       dbId: row.id,
+      // 조건1: options 배열을 그대로(순서 유지) 보관. 정렬·셔플·필터 없음. 문자열 배열이 아니면 빈 배열로 안전 처리.
+      options: Array.isArray(row.options) ? (row.options as string[]) : [],
     }));
   };
 
@@ -462,14 +466,19 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
   };
 
   const handleNextQuestion = () => {
+    const q = surveyQuestions[currentQuestionIndex];
+    const hasOptions = (q.options?.length ?? 0) > 0;
+    // 결정B: multi_choice 만 선택 텍스트 배열을 JSON.stringify 로 저장. single_choice/text 는 문자열 그대로.
+    const isMulti = q.type === "multi_choice" && hasOptions;
+    const answerValue = isMulti ? JSON.stringify(selectedMulti) : currentAnswer;
     const timeSpent = Date.now() - questionStartTime;
     const typingSpeed = charCount / (timeSpent / 1000);
     setAnswers(prev => [...prev, {
-      questionId: surveyQuestions[currentQuestionIndex].id,
-      question: surveyQuestions[currentQuestionIndex].text,
-      answer: currentAnswer, timeSpent, typingSpeed,
+      questionId: q.id,
+      question: q.text,
+      answer: answerValue, timeSpent, typingSpeed,
     }]);
-    setCurrentAnswer(""); setCharCount(0); setQuestionStartTime(Date.now());
+    setCurrentAnswer(""); setSelectedMulti([]); setCharCount(0); setQuestionStartTime(Date.now());
     if (currentQuestionIndex < surveyQuestions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
@@ -708,6 +717,17 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
         </div>
       );
     }
+    // 조건1·조건4: 객관식은 options 순서 그대로 버튼 렌더. scale 은 오늘 미구현 → text 와 동일 fallback(자유입력)으로 안 깨지게만.
+    const qOptions = currentQ.options ?? [];
+    const isSingle = currentQ.type === "single_choice" && qOptions.length > 0;
+    const isMultiChoice = currentQ.type === "multi_choice" && qOptions.length > 0;
+    const isChoice = isSingle || isMultiChoice;
+    // 10자 강제 폐지: single=1개 선택 / multi=최소 1개 선택 / text·fallback=빈칸만 방지(1자 이상)
+    const canProceed = isSingle
+      ? currentAnswer.length > 0
+      : isMultiChoice
+        ? selectedMulti.length > 0
+        : currentAnswer.trim().length >= 1;
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-6">
         <div className="max-w-lg mx-auto">
@@ -726,37 +746,80 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
                 Q{currentQ.id}
               </div>
               <div className="flex-1">
-                <p className="text-lg text-slate-100 font-medium leading-relaxed">{currentQ.text}</p>
+                <p className="text-lg text-slate-100 font-medium leading-relaxed whitespace-pre-line">{currentQ.text}</p>
                 {currentQ.targetSource && currentQ.type !== 'trap' && (
                   <p className="text-xs text-blue-400 mt-2">📊 {currentQ.targetSource} 연동 데이터 기반 질문</p>
                 )}
               </div>
             </div>
-            <Textarea
-              value={currentAnswer}
-              onChange={(e) => handleAnswerChange(e.target.value)}
-              placeholder="경험에 기반한 솔직한 답변을 작성해주세요..."
-              className="bg-slate-900/50 border-slate-600 text-slate-100 min-h-[150px] placeholder:text-slate-500"
-              onPaste={(e) => {
-                const text = e.clipboardData.getData('text');
-                if (text.length >= 100) {
-                  e.preventDefault();
-                  toast({ title: "⚠️ 붙여넣기 차단", description: "100자 이상 붙여넣기는 허용되지 않습니다.", variant: "destructive" });
-                }
-              }}
-            />
-            <div className="flex items-center justify-between mt-3 text-xs text-slate-500">
-              <span>{currentAnswer.length}자 입력</span>
-              <span>타이핑 속도: {charCount > 0 ? Math.round(charCount / ((Date.now() - questionStartTime) / 1000)) : 0} 자/초</span>
+            {isChoice ? (
+              // 객관식: options 배열 순서 그대로(조건1). single=단일선택, multi=복수토글.
+              <div className="space-y-3">
+                {qOptions.map((opt, idx) => {
+                  const selected = isMultiChoice ? selectedMulti.includes(opt) : currentAnswer === opt;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        if (isMultiChoice) {
+                          setSelectedMulti(prev => prev.includes(opt) ? prev.filter(o => o !== opt) : [...prev, opt]);
+                        } else {
+                          setCurrentAnswer(opt);
+                        }
+                      }}
+                      className={`w-full flex items-center gap-3 text-left px-4 py-3 rounded-xl border transition-colors ${
+                        selected
+                          ? "bg-blue-600/20 border-blue-500 text-slate-100"
+                          : "bg-slate-900/50 border-slate-600 text-slate-200 hover:border-slate-500"
+                      }`}
+                    >
+                      <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
+                        selected ? "bg-blue-500 text-white" : "bg-slate-700 text-slate-300"
+                      }`}>
+                        {idx + 1}
+                      </span>
+                      <span className="flex-1">{opt}</span>
+                      {selected && <CheckCircle2 className="w-5 h-5 text-blue-400 shrink-0" />}
+                    </button>
+                  );
+                })}
+                {isMultiChoice && (
+                  <p className="text-xs text-slate-500 pt-1">복수 선택 가능</p>
+                )}
+              </div>
+            ) : (
+              // text · scale(fallback): 기존 자유입력. 붙여넣기·타이핑 감지 유지(조건4 — 손대지 않음).
+              <>
+                <Textarea
+                  value={currentAnswer}
+                  onChange={(e) => handleAnswerChange(e.target.value)}
+                  placeholder="경험에 기반한 솔직한 답변을 작성해주세요..."
+                  className="bg-slate-900/50 border-slate-600 text-slate-100 min-h-[150px] placeholder:text-slate-500"
+                  onPaste={(e) => {
+                    const text = e.clipboardData.getData('text');
+                    if (text.length >= 100) {
+                      e.preventDefault();
+                      toast({ title: "⚠️ 붙여넣기 차단", description: "100자 이상 붙여넣기는 허용되지 않습니다.", variant: "destructive" });
+                    }
+                  }}
+                />
+                <div className="flex items-center justify-between mt-3 text-xs text-slate-500">
+                  <span>{currentAnswer.length}자 입력</span>
+                  <span>타이핑 속도: {charCount > 0 ? Math.round(charCount / ((Date.now() - questionStartTime) / 1000)) : 0} 자/초</span>
+                </div>
+              </>
+            )}
+          </div>
+          {!isChoice && (
+            <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg mb-6">
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+              <span className="text-xs text-amber-400">입력 속도와 패턴이 실시간으로 기록됩니다.</span>
             </div>
-          </div>
-          <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg mb-6">
-            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
-            <span className="text-xs text-amber-400">입력 속도와 패턴이 실시간으로 기록됩니다.</span>
-          </div>
+          )}
           <Button
             onClick={handleNextQuestion}
-            disabled={currentAnswer.trim().length < 10}
+            disabled={!canProceed}
             className="w-full h-14 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-semibold"
           >
             {currentQuestionIndex < surveyQuestions.length - 1 ? "다음 질문" : "교차 검증으로 이동"}
