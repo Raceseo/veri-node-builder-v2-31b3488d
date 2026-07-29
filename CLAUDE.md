@@ -100,3 +100,59 @@ Claude Code에게 말하기. Claude Code가 MCP로 erkmt에 apply하고 마이�
    - vn_balance는 DB 트리거로도 보호됨(protect_vn_balance) — profiles.vn_balance 직접 UPDATE는 service_role 외 차단(2026-07-26 적용)
 5. DB 스키마 변경 작업 후 Supabase Advisor 경고 0건 확인을 완료 기준에 포함할 것
 6. 관리자 2인 승인 로직은 어떤 리팩토링에서도 제거·우회 금지
+
+## 세션 시작 시 읽을 것 (2026-07-29 갱신)
+
+### 첫 명령 (고정)
+pwd && git log --oneline -3 && git status --short
+
+### 내가 볼 수 없는 것 — 추측 금지
+- 서울 DB 실물 (MCP 접근 불가). SQL은 블록으로 제시만, Ray가 SQL Editor에서 실행
+- Ray가 SQL Editor에서 한 작업 (테스트 데이터 정리 등)
+- Lovable 배포 상태
+- 브라우저 화면 (로그인 자격 없음)
+→ 이 영역이 보고에 등장하면 "짐작"이라고 명시할 것
+
+### SQL 작성 시
+- auth.uid()는 SQL Editor(Role postgres)에서 NULL. 이메일이나 uuid로 대체
+- INSERT/UPDATE 전 information_schema.columns 조회를 낀다
+- jsonb 컬럼은 select 컬럼::text ... limit 1 로 기존 견본 확인
+- 한글 텍스트는 $$ 달러 인용
+- 테스트 데이터 정리는 delete 대신 status='closed'
+
+### 화면 정리 작업 시
+① 지우기 → ② Ray가 화면 확인 → ③ 구조 정리
+①만 하면 값이 빠진 껍데기 카드가 남는다 (2026-07-29 실증)
+line-item 제거 지시를 받으면 "제거 후 껍데기가 되는 카드"도 함께 보고할 것
+
+### 주요 코드 좌표
+- src/pages/Index.tsx:55 — 온보딩 완료자를 /dashboard로 리다이렉트
+  → SupplierLayout(설문 목록)에 정상 도달 불가. 구간②-B 미착수
+- src/pages/Index.tsx:49-54 — ?surveyId= 있으면 리다이렉트 안 함 (유일한 예외)
+- src/pages/Dashboard.tsx:28 — /dashboard = VeriNodeFinancialDashboard
+- SupplierLayout.tsx:52 activeTab 기본값 'home' / 59 초기 currentView
+  / 70-71,137 handleBackToMain / 206 case home / 294-296 BottomNav
+- 설문 완주 → handleBackToMain → main 뷰 → 홈 탭 착지
+  즉 딥링크 응답자는 완주 직후 SupplierHomeTab을 본다
+
+### 현재 우회 진입 경로 (구간②-B 완료 전까지 유일)
+/?surveyId=<uuid> → "← 돌아가기" → 하단 "수익 쌓기" 탭
+화면명 "수익 쌓기" = 코드명 earn
+
+### 검증 규칙
+- 돈 관련 기능은 3점 대조: 화면 ↔ profiles.vn_balance ↔ survey_reward_claims
+- 3점 일치 전 커밋 금지
+- 한 번에 한 작업만 커밋. 무관 파일 절대 미포함
+- 커밋과 푸시를 함께 처리 (푸시 누락으로 다음 날 혼선 발생한 적 있음)
+- 커밋 대상 아님: .claude/, .env.bak_seoulfix, supabase/.temp/,
+  supabase/functions/verify-portone-identity/, package-lock.json,
+  supabase/config.toml
+
+### 절대 손대지 말 것
+- 관리자 2인 승인 (2-Admin Approval System) — 보안규칙 #6 보호 대상
+- vn_balance 직접 UPDATE — RPC / Edge Function 경유만
+- 요청 범위 밖 파일
+
+### 상태 정보는 파일에 적지 않는다
+"어느 PC가 뒤처졌나" 같은 정보는 하루면 틀린다.
+파일 대신 git log / git status로 매번 확인한다.
