@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Shield, TrendingUp, Lock, Bell, ChevronRight, Sparkles,
-  Users, DollarSign, MapPin, Clock, Coffee, AlertTriangle, CheckCircle2
+  Users, DollarSign, MapPin, Clock, Coffee, AlertTriangle
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -72,18 +72,7 @@ export const VeriNodeFinancialDashboard = () => {
 
   // 수익 계산 (실제 DB 기반)
   const totalEarned = profile?.vn_balance || 0;
-  const totalSaleEarnings = (saleRecords || []).reduce((sum, r) => sum + (r.net_amount || 0), 0);
-  const estimatedDataValue = Math.max(totalEarned, totalSaleEarnings) * 3.6;
   const activeListings = (listings || []).filter(l => l.status === 'active').length;
-
-  // 최근 수입 트랜잭션
-  const recentIncome = (transactions || []).filter(t => t.amount > 0).slice(0, 5);
-
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW', maximumFractionDigits: 0 }).format(amount);
-
-  const formatUSD = (amount: number) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(amount / 1350);
 
   if (profileLoading) {
     return (
@@ -119,56 +108,28 @@ export const VeriNodeFinancialDashboard = () => {
               
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm opacity-70 mb-1">My Data Value (Estimated)</p>
+                  <p className="text-sm opacity-70 mb-1">VN Balance</p>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-display tracking-tight">{formatUSD(estimatedDataValue)}</span>
-                    <span className="text-sm opacity-60">≈ {formatCurrency(estimatedDataValue)}</span>
+                    <span className="text-4xl font-display tracking-tight">{totalEarned.toLocaleString()} VN</span>
                   </div>
                 </div>
-                
+
                 <div className="h-px bg-white/20" />
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs opacity-60 mb-0.5">VN Balance</p>
-                    <div className="flex items-center gap-1.5">
-                      <DollarSign className="w-4 h-4 text-gold" />
-                      <span className="text-xl font-bold">{totalEarned.toLocaleString()} VN</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs opacity-60 mb-0.5">Active Listings</p>
-                    <span className="text-xl font-bold">{activeListings}</span>
-                  </div>
+
+                <div>
+                  <p className="text-xs opacity-60 mb-0.5">Active Listings</p>
+                  <span className="text-xl font-bold">{activeListings}</span>
                 </div>
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Security Status */}
+        {/* Approval System */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.15 }}>
           <Card className="border-0 shadow-card bg-gradient-to-r from-success/5 to-trust-teal/5">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-verified flex items-center justify-center shadow-secure">
-                    <Shield className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-foreground">Financial Grade Security</p>
-                    <div className="flex items-center gap-1.5 text-sm text-success">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Active</span>
-                    </div>
-                  </div>
-                </div>
-                <Badge className="bg-trust-teal/10 text-trust-teal border-trust-teal/20">
-                  Level {profile?.security_level || 0}
-                </Badge>
-              </div>
-              
-              <div className="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/10">
+              <div className="p-3 bg-primary/5 rounded-lg border border-primary/10">
                 <div className="flex items-center gap-2 text-sm">
                   <Lock className="w-4 h-4 text-primary" />
                   <span className="font-medium text-primary">2-Admin Approval System</span>
