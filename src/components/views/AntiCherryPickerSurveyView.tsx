@@ -482,7 +482,9 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
     if (currentQuestionIndex < surveyQuestions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
-      setCurrentStep("cross_verify");
+      // 구간③-C: DB 설문 모드는 cross_verify(자유서술 강제)를 생략하고 security_scan 직행.
+      //   인증 모드(getDefaultQuestions 경로)는 기존대로 cross_verify 유지.
+      setCurrentStep(isDbSurveyMode ? "security_scan" : "cross_verify");
     }
   };
 
@@ -822,7 +824,9 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
             disabled={!canProceed}
             className="w-full h-14 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-semibold"
           >
-            {currentQuestionIndex < surveyQuestions.length - 1 ? "다음 질문" : "교차 검증으로 이동"}
+            {currentQuestionIndex < surveyQuestions.length - 1
+              ? "다음 질문"
+              : (isDbSurveyMode ? "응답 완료" : "교차 검증으로 이동")}
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
         </div>
