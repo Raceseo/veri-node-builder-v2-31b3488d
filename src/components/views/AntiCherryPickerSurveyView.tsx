@@ -23,9 +23,11 @@ interface AntiCherryPickerSurveyViewProps {
   onComplete: () => void;
   /** 있으면 "DB 설문 모드": survey_questions 에서 문항을 읽고 survey_responses 에 저장. 없으면 기존 AI 인증 모드. */
   surveyId?: string;
+  /** 구간G: 참여 불가(닫힘·없음) 안내 화면의 "수익 쌓기 탭으로" 버튼 목적지. 없으면 onBack 으로 폴백. */
+  onGoToEarn?: () => void;
 }
 
-type SurveyStep = "ethics_pledge" | "generating_questions" | "survey" | "cross_verify" | "security_scan" | "complete";
+type SurveyStep = "ethics_pledge" | "generating_questions" | "survey" | "cross_verify" | "security_scan" | "complete" | "unavailable";
 
 interface SurveyQuestion {
   id: number;
@@ -61,7 +63,7 @@ interface LinkedDataSummary {
   transactionCategories: string[];
 }
 
-const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherryPickerSurveyViewProps) => {
+const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }: AntiCherryPickerSurveyViewProps) => {
   const queryClient = useQueryClient();
   const { refetch: refetchProfile } = useProfileContext();
   const [currentStep, setCurrentStep] = useState<SurveyStep>("ethics_pledge");
@@ -232,6 +234,13 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
         .then(([questions, rewardRes]) => {
           if (cancelled) return;
           setGenerationProgress(100);
+          // 구간G: closed/없는 설문은 RLS 로 문항 0건 + surveys 행 없음(.single() 406)으로 나타난다.
+          //   (closed 와 없음은 RLS 상 클라이언트가 구분 불가.) 빈 설문으로 survey 단계에 들어가면
+          //   폴백 스피너에 무한히 갇히므로, 이용불가 안내 화면으로 분기한다.
+          if (questions.length === 0 || rewardRes?.data == null) {
+            setCurrentStep("unavailable");
+            return;
+          }
           setSurveyQuestions(questions);
           setRewardVn(rewardRes?.data?.reward_vn ?? null);
           setCurrentStep("survey");
@@ -942,6 +951,32 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
             </div>
           </div>
           <p className="text-slate-600 text-xs mt-6">🔒 금융급 보안 프로토콜 적용 중</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── 구간G: 참여 불가(닫힘·없음) 안내 ────────────────────────────────────
+  //   closed/없는 설문 딥링크로 진입 시 무한 스피너 대신 이 화면을 보여준다.
+  if (currentStep === "unavailable") {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-6">
+        <div className="max-w-lg w-full text-center">
+          <div className="w-20 h-20 mx-auto mb-6 bg-slate-700/50 rounded-full flex items-center justify-center border border-slate-600">
+            <AlertTriangle className="w-10 h-10 text-slate-300" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-100 mb-3">참여할 수 없는 설문입니다</h2>
+          <p className="text-slate-400 text-sm leading-relaxed mb-8">
+            이미 종료되었거나 존재하지 않는 설문이에요.<br />
+            수익 쌓기 탭에서 참여 가능한 설문을 확인해보세요.
+          </p>
+          <Button
+            onClick={onGoToEarn ?? onBack}
+            className="w-full h-14 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-semibold"
+          >
+            수익 쌓기 탭으로
+            <ArrowRight className="w-5 h-5 ml-2" />
+          </Button>
         </div>
       </div>
     );

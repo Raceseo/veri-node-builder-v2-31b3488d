@@ -136,6 +136,7 @@ const SupplierLayout = ({ onSwitchToDemand }: SupplierLayoutProps) => {
               onBack={handleBackToMain}
               onComplete={handleBackToMain}
               surveyId={activeSurveyId ?? dbSurveyId}
+              onGoToEarn={() => { setActiveTab("earn"); setCurrentView("main"); setActiveSurveyId(undefined); }}
             />
           </Suspense>
         );
