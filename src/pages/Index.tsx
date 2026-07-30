@@ -10,6 +10,7 @@ import React, { useEffect, useState, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProfileContext } from "@/contexts/ProfileContext";
 import { supabase } from "@/integrations/supabase/client";
+import { consumePendingSurvey, clearPendingSurvey } from "@/lib/pendingSurvey";
 import { useToast } from "@/hooks/use-toast";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import { SubscriptionCreateSheet } from "@/components/corporate/SubscriptionCreateSheet";
@@ -39,20 +40,42 @@ const Index = () => {
   const [isSubscriptionOpen, setIsSubscriptionOpen] = useState(false);
   const [isDataRequestOpen, setIsDataRequestOpen] = useState(false);
 
+  // 구간H: surveyId 를 URL 에 복원하고 SupplierLayout(공급자)으로 진입시킨다.
+  //   (SupplierLayout 이 window.location.search 에서 surveyId 를 읽어 DB 설문 모드로 들어감)
+  const enterSurveyMode = (id: string) => {
+    window.history.replaceState(null, '', '/?surveyId=' + id);
+    setUserMode('supplier');
+    setOnboardingStep('complete');
+  };
+
   // 온보딩 상태 결정
   useEffect(() => {
     if (isLoading) return;
 
     if (profile?.onboarding_completed) {
-      // ✅ 설문 딥링크(?surveyId): 공급자는 /dashboard 로 튕기지 않고 SupplierLayout 으로 진입시켜 설문을 연다.
-      //    (SupplierLayout 이 window.location.search 에서 surveyId 를 읽어 DB 설문 모드로 들어감)
-      const hasSurveyDeepLink = new URLSearchParams(window.location.search).has('surveyId');
-      if (hasSurveyDeepLink && profile.user_type !== 'enterprise') {
+      // 기업 계정: 설문은 제공자용이므로 스태시를 즉시 삭제(구간H 조건1)하고 기업 화면으로
+      if (profile.user_type === 'enterprise') {
+        clearPendingSurvey();
+        navigate('/enterprise', { replace: true });
+        return;
+      }
+
+      // 개인: ①URL 의 surveyId 우선(있으면 스태시 잔재 정리) → ②없으면 스태시 폴백(1회 소비)
+      const urlSurveyId = new URLSearchParams(window.location.search).get('surveyId');
+      if (urlSurveyId) {
+        clearPendingSurvey();
         setUserMode('supplier');
         setOnboardingStep('complete');
         return;
       }
-      navigate(profile.user_type === 'enterprise' ? '/enterprise' : '/dashboard', { replace: true });
+      const stashedSurveyId = consumePendingSurvey();
+      if (stashedSurveyId) {
+        enterSurveyMode(stashedSurveyId);
+        return;
+      }
+
+      // 딥링크 없음: 일반 리다이렉트(구간②-B 로 남김 — 여기서 고치지 않음)
+      navigate('/dashboard', { replace: true });
       return;
     }
 
@@ -82,7 +105,24 @@ const Index = () => {
     }
 
     refetch();
-    navigate(nextUserType === 'enterprise' ? '/enterprise' : '/dashboard', { replace: true });
+
+    // 기업 계정: 스태시 삭제(조건1) 후 기업 화면으로
+    if (nextUserType === 'enterprise') {
+      clearPendingSurvey();
+      navigate('/enterprise', { replace: true });
+      return;
+    }
+
+    // 개인 신규가입: URL 우선 → 스태시 폴백. 있으면 /dashboard 대신 설문으로 직행(구간H)
+    const urlSurveyId = new URLSearchParams(window.location.search).get('surveyId');
+    const targetSurveyId = urlSurveyId || consumePendingSurvey();
+    if (targetSurveyId) {
+      enterSurveyMode(targetSurveyId);
+      setIsCompletingOnboarding(false);
+      return;
+    }
+
+    navigate('/dashboard', { replace: true });
   };
 
   // 로딩 중
