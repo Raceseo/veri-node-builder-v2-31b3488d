@@ -108,11 +108,6 @@ const IntroView = ({ onStart }: IntroViewProps) => {
           <span>개인정보 보호</span>
         </div>
       </div>
-
-      {/* Bottom Branding */}
-      <div className="absolute bottom-6 text-white/30 text-xs">
-        Powered by Blockchain Technology
-      </div>
     </div>
   );
 };

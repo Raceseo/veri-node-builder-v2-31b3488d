@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { 
-  User, Building2, ArrowRight, Shield, Sparkles, 
+import {
+  User, Building2, ArrowRight, Shield, Sparkles,
   TrendingUp, Lock, FileCheck, ChevronRight,
-  Smartphone, CreditCard, CheckCircle2, AlertTriangle,
-  Fingerprint, BadgeCheck, Briefcase
+  CheckCircle2, AlertTriangle, Briefcase
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,37 +19,20 @@ interface DualModeEntryViewProps {
 const DualModeEntryView = ({ onComplete }: DualModeEntryViewProps) => {
   const [selectedType, setSelectedType] = useState<UserType>(null);
   const [currentStep, setCurrentStep] = useState<OnboardingStep>("select");
-  
-  // Individual state
-  const [isMyDataConnecting, setIsMyDataConnecting] = useState(false);
-  const [myDataConnected, setMyDataConnected] = useState(false);
-  const [verificationComplete, setVerificationComplete] = useState(false);
-  
+
   // Enterprise state
   const [businessNumber, setBusinessNumber] = useState("");
   const [ndaAgreed, setNdaAgreed] = useState(false);
   const [businessVerified, setBusinessVerified] = useState(false);
 
+  // I-1: 「본인 인증」(모형) 화면 제거 — 개인 선택 시 온보딩을 바로 완료한다.
   const handleSelectIndividual = () => {
-    setSelectedType("individual");
-    setCurrentStep("individual-verify");
+    onComplete("individual");
   };
 
   const handleSelectEnterprise = () => {
     setSelectedType("enterprise");
     setCurrentStep("enterprise-verify");
-  };
-
-  const handleMyDataConnect = () => {
-    setIsMyDataConnecting(true);
-    // Simulate connection
-    setTimeout(() => {
-      setIsMyDataConnecting(false);
-      setMyDataConnected(true);
-      setTimeout(() => {
-        setVerificationComplete(true);
-      }, 1500);
-    }, 2000);
   };
 
   const handleBusinessVerify = () => {
@@ -68,7 +50,7 @@ const DualModeEntryView = ({ onComplete }: DualModeEntryViewProps) => {
     return (
       <div className="min-h-screen flex">
         {/* Individual Side - Bright & Friendly */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
@@ -78,8 +60,8 @@ const DualModeEntryView = ({ onComplete }: DualModeEntryViewProps) => {
           {/* Decorative Elements */}
           <div className="absolute top-10 left-10 w-32 h-32 bg-trust/10 rounded-full blur-3xl" />
           <div className="absolute bottom-20 right-10 w-40 h-40 bg-trustTeal/10 rounded-full blur-3xl" />
-          
-          <motion.div 
+
+          <motion.div
             className="relative z-10 text-center max-w-sm"
             whileHover={{ scale: 1.02 }}
             transition={{ type: "spring", stiffness: 300 }}
@@ -87,7 +69,7 @@ const DualModeEntryView = ({ onComplete }: DualModeEntryViewProps) => {
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-trust to-trustTeal flex items-center justify-center mx-auto mb-6 shadow-lg shadow-trust/30 group-hover:shadow-xl group-hover:shadow-trust/40 transition-all">
               <User className="w-12 h-12 text-white" />
             </div>
-            
+
             <h2 className="text-3xl font-bold text-slate-800 mb-4">개인</h2>
             <p className="text-slate-600 mb-8 leading-relaxed">
               마이데이터로 내 가치를 증명하고<br/>
@@ -109,7 +91,7 @@ const DualModeEntryView = ({ onComplete }: DualModeEntryViewProps) => {
               </div>
             </div>
 
-            <Button 
+            <Button
               className="w-full bg-gradient-to-r from-trust to-trustTeal hover:opacity-90 text-white py-6 rounded-xl text-lg font-semibold shadow-lg shadow-trust/30 group-hover:shadow-xl transition-all"
             >
               개인으로 시작하기
@@ -119,7 +101,7 @@ const DualModeEntryView = ({ onComplete }: DualModeEntryViewProps) => {
         </motion.div>
 
         {/* Enterprise Side - Dark & Professional */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
@@ -129,8 +111,8 @@ const DualModeEntryView = ({ onComplete }: DualModeEntryViewProps) => {
           {/* Decorative Elements */}
           <div className="absolute top-20 right-10 w-32 h-32 bg-trust/5 rounded-full blur-3xl" />
           <div className="absolute bottom-10 left-10 w-40 h-40 bg-amber-500/5 rounded-full blur-3xl" />
-          
-          <motion.div 
+
+          <motion.div
             className="relative z-10 text-center max-w-sm"
             whileHover={{ scale: 1.02 }}
             transition={{ type: "spring", stiffness: 300 }}
@@ -138,7 +120,7 @@ const DualModeEntryView = ({ onComplete }: DualModeEntryViewProps) => {
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-black/30 border border-slate-600/50 group-hover:border-trust/50 transition-all">
               <Building2 className="w-12 h-12 text-white" />
             </div>
-            
+
             <h2 className="text-3xl font-bold text-white mb-4">기업</h2>
             <p className="text-slate-400 mb-8 leading-relaxed">
               V-Core 기술로 안전하게 데이터를 구매하고<br/>
@@ -160,7 +142,7 @@ const DualModeEntryView = ({ onComplete }: DualModeEntryViewProps) => {
               </div>
             </div>
 
-            <Button 
+            <Button
               className="w-full bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 text-white py-6 rounded-xl text-lg font-semibold border border-slate-600/50 group-hover:border-trust/50 transition-all"
             >
               기업으로 시작하기
@@ -172,210 +154,11 @@ const DualModeEntryView = ({ onComplete }: DualModeEntryViewProps) => {
     );
   }
 
-  // Individual Onboarding - MyData + CI/DI Verification
-  if (currentStep === "individual-verify") {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-100 flex flex-col items-center justify-center p-6">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md"
-        >
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-trust to-trustTeal flex items-center justify-center mx-auto mb-4 shadow-lg shadow-trust/30">
-              <Fingerprint className="w-10 h-10 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-slate-800 mb-2">본인 인증</h1>
-            <p className="text-slate-600">마이데이터로 1초 만에 연결하세요</p>
-          </div>
-
-          {/* 데이터 주권 철학 배지 */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-4 mb-6"
-          >
-            <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center flex-shrink-0">
-                <Lock className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="font-semibold text-slate-800 text-sm mb-1">
-                  🔐 본인인증은 데이터 주권의 시작입니다
-                </p>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  당신만이 당신의 데이터를 관리할 수 있도록, 진짜 주인이 누구인지 확인하는 과정입니다. VeriNode는 이 인증 외의 어떤 용도로도 개인정보를 사용하지 않습니다.
-                </p>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* MyData Connection Card */}
-          <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-trust to-trustTeal flex items-center justify-center">
-                  <Smartphone className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-slate-800">마이데이터 연결</h3>
-                  <p className="text-sm text-slate-500">금융/공공 데이터 통합</p>
-                </div>
-              </div>
-              {myDataConnected && (
-                <CheckCircle2 className="w-6 h-6 text-emerald-500" />
-              )}
-            </div>
-
-            {!myDataConnected ? (
-              <Button
-                onClick={handleMyDataConnect}
-                disabled={isMyDataConnecting}
-                className="w-full bg-gradient-to-r from-trust to-trustTeal hover:opacity-90 text-white py-6 rounded-xl text-lg font-semibold"
-              >
-                {isMyDataConnecting ? (
-                  <span className="flex items-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    연결 중...
-                  </span>
-                ) : (
-                  <>
-                    1초 만에 데이터 불러오기
-                    <ChevronRight className="ml-2 w-5 h-5" />
-                  </>
-                )}
-              </Button>
-            ) : (
-              <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200">
-                <div className="flex items-center gap-2 text-emerald-700">
-                  <CheckCircle2 className="w-5 h-5" />
-                  <span className="font-medium">마이데이터 연결 완료</span>
-                </div>
-              </div>
-            )}
-
-            {/* Trust Score Bonus Notice */}
-            <div className="mt-4 bg-amber-50 rounded-xl p-4 border border-amber-200">
-              <div className="flex items-start gap-3">
-                <Sparkles className="w-5 h-5 text-amber-500 mt-0.5" />
-                <div>
-                  <p className="text-sm text-amber-800 font-medium">신뢰 점수 2배 상승!</p>
-                  <p className="text-xs text-amber-600 mt-1">마이데이터로 제출 시 더 높은 보상을 받을 수 있습니다</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* CI/DI Verification */}
-          <AnimatePresence>
-            {myDataConnected && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-2xl shadow-xl p-6 mb-6"
-              >
-                <h3 className="font-semibold text-slate-800 mb-4">본인 인증 (CI/DI)</h3>
-                
-                <div className="space-y-3">
-                  <button className="w-full flex items-center gap-4 p-4 rounded-xl border border-slate-200 hover:border-trust hover:bg-trust/5 transition-all">
-                    <div className="w-10 h-10 rounded-lg bg-yellow-100 flex items-center justify-center">
-                      <CreditCard className="w-5 h-5 text-yellow-600" />
-                    </div>
-                    <div className="text-left">
-                      <p className="font-medium text-slate-800">카카오페이 인증</p>
-                      <p className="text-xs text-slate-500">간편하게 본인 인증</p>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-slate-400 ml-auto" />
-                  </button>
-
-                  <button className="w-full flex items-center gap-4 p-4 rounded-xl border border-slate-200 hover:border-trust hover:bg-trust/5 transition-all">
-                    <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                      <BadgeCheck className="w-5 h-5 text-green-600" />
-                    </div>
-                    <div className="text-left">
-                      <p className="font-medium text-slate-800">PASS 인증</p>
-                      <p className="text-xs text-slate-500">휴대폰 본인 인증</p>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-slate-400 ml-auto" />
-                  </button>
-
-                  <button className="w-full flex items-center gap-4 p-4 rounded-xl border border-slate-200 hover:border-trust hover:bg-trust/5 transition-all">
-                    <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                      <Fingerprint className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div className="text-left">
-                      <p className="font-medium text-slate-800">생체 인증</p>
-                      <p className="text-xs text-slate-500">지문/Face ID로 인증</p>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-slate-400 ml-auto" />
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* V-Core Verification Animation */}
-          <AnimatePresence>
-            {verificationComplete && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-emerald-500 rounded-2xl shadow-xl p-6 mb-6 text-white"
-              >
-                <div className="flex items-center gap-4">
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: "spring", stiffness: 500, delay: 0.2 }}
-                  >
-                    <CheckCircle2 className="w-12 h-12" />
-                  </motion.div>
-                  <div>
-                    <h3 className="font-bold text-lg">V-Core 검증 완료</h3>
-                    <p className="text-emerald-100 text-sm">원본 데이터 무결성 검증 완료</p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {verificationComplete && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-            >
-              <Button
-                onClick={handleComplete}
-                className="w-full bg-gradient-to-r from-trust to-trustTeal hover:opacity-90 text-white py-6 rounded-xl text-lg font-semibold"
-              >
-                대시보드로 이동
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-            </motion.div>
-          )}
-
-          {/* Partner Logos */}
-          <div className="mt-8 text-center">
-            <p className="text-xs text-slate-500 mb-4">마이데이터 공식 파트너</p>
-            <div className="flex justify-center gap-4 opacity-60">
-              <div className="w-16 h-8 bg-slate-200 rounded flex items-center justify-center text-xs text-slate-500">금융위</div>
-              <div className="w-16 h-8 bg-slate-200 rounded flex items-center justify-center text-xs text-slate-500">NIA</div>
-              <div className="w-16 h-8 bg-slate-200 rounded flex items-center justify-center text-xs text-slate-500">KISA</div>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
   // Enterprise Onboarding - Business Number + NDA
   if (currentStep === "enterprise-verify") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-navy-dark to-slate-950 flex flex-col items-center justify-center p-6">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-md"
@@ -408,7 +191,7 @@ const DualModeEntryView = ({ onComplete }: DualModeEntryViewProps) => {
               <Lock className="w-5 h-5 text-trust" />
               영업비밀 보호 서약 (NDA)
             </h3>
-            
+
             <div className="bg-slate-800/50 rounded-xl p-4 mb-4 max-h-40 overflow-y-auto text-sm text-slate-400 leading-relaxed">
               <p className="mb-2">본 서약서는 VeriNode 플랫폼을 통해 제공받는 모든 데이터 및 관련 정보의 기밀 유지를 위한 것입니다.</p>
               <p className="mb-2">1. 데이터의 무단 복제, 배포, 제3자 공유 금지</p>
@@ -418,7 +201,7 @@ const DualModeEntryView = ({ onComplete }: DualModeEntryViewProps) => {
             </div>
 
             <label className="flex items-start gap-3 cursor-pointer">
-              <Checkbox 
+              <Checkbox
                 checked={ndaAgreed}
                 onCheckedChange={(checked) => setNdaAgreed(checked as boolean)}
                 className="mt-1 border-slate-500 data-[state=checked]:bg-trust data-[state=checked]:border-trust"
