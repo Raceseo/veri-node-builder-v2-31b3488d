@@ -82,6 +82,8 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
   const [generationStage, setGenerationStage] = useState("");
   const [surveyQuestions, setSurveyQuestions] = useState<SurveyQuestion[]>([]);
   const [rewardVn, setRewardVn] = useState<number | null>(null); // DB 설문 모드: surveys.reward_vn 실제 보상값
+  // C-3: 보상 적립의 실제 결과. complete 화면 문구/버튼이 이 값을 읽어 분기(표시용 배선만 — 적립·잔액 로직 무변경).
+  const [claimOutcome, setClaimOutcome] = useState<"success" | "already" | "failed" | null>(null);
 
   const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
   const [charCount, setCharCount] = useState(0);
@@ -398,12 +400,15 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
       });
       if (error) {
         console.error("보상 적립 실패:", error);
+        setClaimOutcome("failed"); // C-3: 실패 결과 기록(화면 표시용)
         toast({ title: "보상 적립 실패", description: "잔액은 잠시 후 반영될 수 있어요.", variant: "destructive" });
         return;
       }
       if (data?.already_claimed) {
+        setClaimOutcome("already"); // C-3: 이미 지급 결과 기록
         toast({ title: "이미 보상을 받은 설문입니다" });
       } else if (data?.success) {
+        setClaimOutcome("success"); // C-3: 성공 결과 기록
         if (typeof data.reward_vn === "number") setRewardVn(data.reward_vn);
         toast({ title: `🎉 +${(data.reward_vn ?? 0).toLocaleString()} VN 적립 완료`, description: `현재 잔액 ${(data.new_balance ?? 0).toLocaleString()} VN` });
       }
@@ -418,6 +423,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
       queryClient.invalidateQueries({ queryKey: ["active-surveys"] });
     } catch (e) {
       console.error("보상 적립 오류:", e);
+      setClaimOutcome("failed"); // C-3: 예외도 실패로 기록(무응답 blank 방지)
     }
   };
 
@@ -952,8 +958,18 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
           {/* 구간F-1(C-2): 판정 근거 없는 "무결성/보안 통과" 단정 → 사실 문구로 교체(Ray 승인 후보③ 확정). */}
           <h2 className="text-2xl font-bold text-slate-100 mb-2">응답 제출 완료</h2>
           <p className="text-slate-400 mb-2">소중한 응답 감사합니다</p>
-          {isDbSurveyMode && rewardVn != null && (
-            <p className="text-green-400 text-sm font-semibold mb-6">🎉 설문 참여로 +{rewardVn.toLocaleString()} VN 지급!</p>
+          {/* C-3: 적립 결과(claimOutcome)에 따라 문구 분기. 성공에서만 금액을 노출한다. */}
+          {isDbSurveyMode && claimOutcome === "success" && (
+            <p className="text-green-400 text-sm font-semibold mb-6">🎉 설문 참여로 +{(rewardVn ?? 0).toLocaleString()} VN이 적립되었습니다</p>
+          )}
+          {isDbSurveyMode && claimOutcome === "already" && (
+            <p className="text-slate-300 text-sm font-semibold mb-6">이미 지급받은 설문입니다</p>
+          )}
+          {isDbSurveyMode && claimOutcome === "failed" && (
+            <div className="mb-6">
+              <p className="text-amber-400 text-sm font-semibold">⚠️ 응답은 저장되었지만 보상 적립이 처리되지 않았습니다</p>
+              <p className="text-slate-400 text-sm mt-1">수익 쌓기 탭에서 다시 시도해 주세요</p>
+            </div>
           )}
           {isFullyLinked && (
             <p className="text-green-400 text-sm font-semibold mb-6">🎉 마이데이터 연동으로 +500 VN 지급!</p>
@@ -972,7 +988,10 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId }: AntiCherry
             onClick={onComplete}
             className="w-full h-14 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-semibold"
           >
-            완료하고 보상 받기 (+{(isDbSurveyMode ? (rewardVn ?? 0) : (isFullyLinked ? 500 : 100)).toLocaleString()} VN)
+            {/* C-3: DB 설문 모드는 결과별 라벨(금액은 위 안내문에만). 인증 모드(범위 밖)는 기존 라벨 유지. */}
+            {isDbSurveyMode
+              ? (claimOutcome === "failed" ? "닫기" : "완료")
+              : `완료하고 보상 받기 (+${(isFullyLinked ? 500 : 100).toLocaleString()} VN)`}
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
         </div>
