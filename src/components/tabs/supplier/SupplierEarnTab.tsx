@@ -1,12 +1,12 @@
-import { useState } from "react";
 import { Coins, Clock, CheckCircle2, Gift, TrendingUp, Play } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import RollingNumber from "@/components/animations/RollingNumber";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveSurveys } from "@/hooks/useActiveSurveys";
+import { useTodaySurveyEarned } from "@/hooks/useTodaySurveyEarned";
 
 interface SupplierEarnTabProps {
   trustScore?: number;
@@ -25,43 +25,11 @@ const SupplierEarnTab = ({
   const { user } = useAuth();
   const { data: surveys = [], isLoading: surveysLoading } = useActiveSurveys(user?.id);
 
-  // 오늘 적립한 수익: F-2에서 transactions 실값 연결 예정. 현재는 로컬 state 유지(초기 0).
-  const [earnedToday, setEarnedToday] = useState(0);
-  const [showRewardAnimation, setShowRewardAnimation] = useState(false);
-  const [lastReward, setLastReward] = useState(0);
-
-  const simulateEarn = (amount: number) => {
-    setLastReward(amount);
-    setShowRewardAnimation(true);
-    setEarnedToday(prev => prev + amount);
-    onEarnPoints?.(amount);
-    setTimeout(() => setShowRewardAnimation(false), 2000);
-  };
+  // D-1: 「오늘 적립한 수익」 = 오늘(KST) transactions 의 type='survey_reward' 합산 실값.
+  const { data: earnedToday = 0, isLoading: earnedLoading } = useTodaySurveyEarned(user?.id);
 
   return (
     <div className="p-4 space-y-5 relative">
-      {/* 보상 애니메이션 */}
-      <AnimatePresence>
-        {showRewardAnimation && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5, y: 50 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.5, y: -50 }}
-            className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
-          >
-            <div className="bg-gold text-navy px-8 py-6 rounded-3xl shadow-2xl">
-              <div className="text-center">
-                <Coins className="w-12 h-12 mx-auto mb-2 animate-bounce" />
-                <p className="text-3xl font-bold">
-                  +<RollingNumber value={lastReward} duration={0.8} />
-                </p>
-                <p className="text-sm font-medium">VN 적립!</p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* 오늘의 수익 요약 */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -76,7 +44,8 @@ const SupplierEarnTab = ({
               <div>
                 <p className="text-sm text-muted-foreground">오늘 적립한 수익</p>
                 <p className="text-2xl font-bold text-foreground">
-                  <RollingNumber value={earnedToday} suffix=" VN" />
+                  {/* D-1: 로딩 중엔 0을 먼저 보이지 않도록 "—"(틀린 숫자 깜빡임 방지) */}
+                  {earnedLoading ? "—" : <RollingNumber value={earnedToday} suffix=" VN" />}
                 </p>
               </div>
             </div>
