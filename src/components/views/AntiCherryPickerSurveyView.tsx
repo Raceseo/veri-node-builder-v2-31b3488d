@@ -17,6 +17,8 @@ import {
   SURVEY_QUESTION_PUBLIC_COLUMNS,
   type SurveyResponseInsert,
 } from "@/integrations/supabase/types.survey";
+import { recordConsent } from "@/lib/recordConsent";
+import { SURVEY_ETHICS } from "@/lib/consentTexts";
 
 interface AntiCherryPickerSurveyViewProps {
   onBack: () => void;
@@ -460,9 +462,22 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
     }
   }, [currentStep, scanProgress, isDbSurveyMode]);
 
-  const handlePledgeSubmit = () => {
+  const handlePledgeSubmit = async () => {
     if (pledgeName.length < 2) {
       toast({ title: "이름을 입력해주세요", description: "정자로 본인의 이름을 기입해주세요.", variant: "destructive" });
+      return;
+    }
+    // J-1(변경1): 설문 서약 동의를 매번 기록(설문마다 서약을 받으므로). 실패 시 진행 차단.
+    const { ok } = await recordConsent({
+      consentType: SURVEY_ETHICS.consentType,
+      consentVersion: SURVEY_ETHICS.version,
+    });
+    if (!ok) {
+      toast({
+        title: "동의를 저장하지 못했습니다",
+        description: "다시 시도해 주세요. 동의가 저장되어야 설문에 참여할 수 있습니다.",
+        variant: "destructive",
+      });
       return;
     }
     setCurrentStep("generating_questions");
@@ -551,9 +566,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
               </p>
             </div>
             <div className="space-y-3 mb-6">
-              {["모든 응답은 본인의 실제 경험에 기반합니다", "거짓 정보를 제공하지 않겠습니다",
-                "AI 또는 타인의 답변을 복사하지 않겠습니다", "서약 위반 시 보상 회수에 동의합니다"
-              ].map((item, idx) => (
+              {SURVEY_ETHICS.items.map((item, idx) => (
                 <div key={idx} className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
                   <span className="text-slate-300 text-sm">{item}</span>

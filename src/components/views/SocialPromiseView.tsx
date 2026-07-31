@@ -2,6 +2,9 @@ import { useState } from "react";
 import { Shield, CheckCircle, FileSignature, Fingerprint, AlertTriangle, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "@/hooks/use-toast";
+import { recordConsent } from "@/lib/recordConsent";
+import { ONBOARDING_PLEDGE } from "@/lib/consentTexts";
 
 interface SocialPromiseViewProps {
   onComplete: () => void;
@@ -20,43 +23,35 @@ const SocialPromiseView = ({ onComplete, displayName = "사용자" }: SocialProm
 
   const allAgreed = Object.values(agreements).every(Boolean);
 
-  const promises = [
-    {
-      key: "ownership" as const,
-      title: "데이터 소유권 인지",
-      description: "본인이 제공하는 모든 데이터의 소유권은 본인에게 있으며, VeriNode는 본인의 명시적 동의 하에서만 이를 관리한다는 것을 이해합니다.",
-      icon: KeyRound,
-    },
-    {
-      key: "honesty" as const,
-      title: "정직한 데이터 공급",
-      description: "모든 설문 응답과 제공 데이터는 진실에 기반하여 작성하겠습니다.",
-      icon: Shield,
-    },
-    {
-      key: "accuracy" as const,
-      title: "정확한 정보 제공",
-      description: "AI 검증을 위한 프로필 정보를 정확하게 입력하겠습니다.",
-      icon: CheckCircle,
-    },
-    {
-      key: "responsibility" as const,
-      title: "책임 있는 참여",
-      description: "허위 응답이나 조작된 데이터 제공 시 발생하는 불이익을 수용합니다.",
-      icon: AlertTriangle,
-    },
-  ];
+  // 문안 원문은 consentTexts.ts(ONBOARDING_PLEDGE)가 단일 출처. 아이콘만 화면에서 매핑.
+  const PLEDGE_ICONS = { ownership: KeyRound, honesty: Shield, accuracy: CheckCircle, responsibility: AlertTriangle } as const;
+  const promises = ONBOARDING_PLEDGE.items.map((it) => ({ ...it, icon: PLEDGE_ICONS[it.key] }));
 
   const handleSign = async () => {
     if (!allAgreed) return;
-    
+
     setIsSigning(true);
-    
+
+    // J-1: 동의 기록(실패 시 진행 차단 — 기록 없는 진행 방지). 재시도는 recordConsent 내부에서.
+    const { ok } = await recordConsent({
+      consentType: ONBOARDING_PLEDGE.consentType,
+      consentVersion: ONBOARDING_PLEDGE.version,
+    });
+    if (!ok) {
+      setIsSigning(false);
+      toast({
+        title: "동의를 저장하지 못했습니다",
+        description: "다시 시도해 주세요. 동의가 저장되어야 다음 단계로 넘어갈 수 있습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // 서명 애니메이션
     await new Promise(resolve => setTimeout(resolve, 1500));
-    
+
     setIsSigned(true);
-    
+
     // 완료 후 진행
     await new Promise(resolve => setTimeout(resolve, 1000));
     onComplete();
