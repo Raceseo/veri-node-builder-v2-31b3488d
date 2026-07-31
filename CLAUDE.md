@@ -156,3 +156,9 @@ line-item 제거 지시를 받으면 "제거 후 껍데기가 되는 카드"도 
 ### 상태 정보는 파일에 적지 않는다
 "어느 PC가 뒤처졌나" 같은 정보는 하루면 틀린다.
 파일 대신 git log / git status로 매번 확인한다.
+
+### Drive 저장 규칙
+인수인계서를 Drive에 저장할 때는 반드시 Google Docs 형식으로 변환한다
+(disableConversionToGoogleType: false).
+마크다운 원본(.md)으로 저장하면 클박사가 다음 세션에 읽을 수 없다.
+2026-08-01 확인: v2·v3(Docs)은 검색되고 v4~v8(.md)은 검색 결과 0건.
