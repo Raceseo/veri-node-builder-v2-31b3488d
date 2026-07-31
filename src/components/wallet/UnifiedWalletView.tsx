@@ -40,6 +40,10 @@ import { useAuth } from "@/hooks/useAuth";
 
 type WalletMode = "compact" | "full";
 
+// 출금 정직화: 실물 테이블(withdrawal_requests) 부재로 출금 실행 불가.
+// 실구현 시 true로 되돌리면 기존 입력 UI가 복원된다. (코드 삭제 없음)
+const WITHDRAWAL_ENABLED: boolean = false;
+
 interface UnifiedWalletViewProps {
   mode?: WalletMode;
   onOpenDataAssetDashboard?: () => void;
@@ -362,6 +366,7 @@ const UnifiedWalletView = ({
             </div>
 
             {/* 출금 입력 */}
+            {WITHDRAWAL_ENABLED ? (
             <div className="space-y-3">
               <div className="flex gap-2">
                 <Input
@@ -371,7 +376,7 @@ const UnifiedWalletView = ({
                   onChange={(e) => setWithdrawAmount(e.target.value)}
                   className="bg-white/20 border-white/30 text-white placeholder:text-white/50"
                 />
-                <Button 
+                <Button
                   onClick={handleWithdraw}
                   disabled={withdrawMutation.isPending || !withdrawAmount}
                   className="bg-white text-primary hover:bg-white/90 border-0 min-w-[80px]"
@@ -389,6 +394,12 @@ const UnifiedWalletView = ({
                 출금 가능: {availableBalance.toLocaleString()} VN · 최소 출금: 500 VN
               </p>
             </div>
+            ) : (
+              <div className="space-y-1 p-3 rounded-lg bg-white/10">
+                <p className="text-sm font-semibold text-white">출금 기능은 준비 중입니다.</p>
+                <p className="text-xs text-white/70">적립된 VN은 그대로 유지됩니다.</p>
+              </div>
+            )}
           </div>
         </div>
 

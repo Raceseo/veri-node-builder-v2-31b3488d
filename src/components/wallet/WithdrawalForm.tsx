@@ -31,6 +31,10 @@ const banks = [
 // 1,000만원 이상은 관리자 2인 승인 필요
 const HIGH_VALUE_THRESHOLD = 10000000;
 
+// 출금 정직화: 실물 테이블(withdrawal_requests) 부재로 출금 실행이 불가한 상태.
+// 출금 실구현 시 이 플래그만 true로 되돌리면 기존 폼이 그대로 복원된다. (코드 삭제 없음)
+const WITHDRAWAL_ENABLED: boolean = false;
+
 const WithdrawalForm = ({ availableBalance, escrowedBalance = 0, onSubmit }: WithdrawalFormProps) => {
   const { user } = useAuth();
   const [selectedBank, setSelectedBank] = useState("");
@@ -133,6 +137,24 @@ const WithdrawalForm = ({ availableBalance, escrowedBalance = 0, onSubmit }: Wit
   };
 
   const isValid = selectedBank && accountNumber.length >= 10 && withdrawAmount > 0 && withdrawAmount <= withdrawableBalance;
+
+  // 출금 준비 중: 실행 경로(금액·계좌 입력, 본인확인 다이얼로그, withdrawals insert) 전체를
+  // 렌더 이전 단계에서 차단하고 안내만 노출한다. 아래 원본 폼은 보존됨.
+  if (!WITHDRAWAL_ENABLED) {
+    return (
+      <Card className="p-6 bg-gradient-to-br from-[#1e3a5f]/20 to-background border-[#1e3a5f]/30">
+        <div className="flex items-start gap-3">
+          <div className="w-8 h-8 rounded-full bg-[#1e3a5f]/30 flex items-center justify-center flex-shrink-0">
+            <Clock className="w-4 h-4 text-[#c9a227]" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground">출금 기능은 준비 중입니다.</p>
+            <p className="text-xs text-muted-foreground mt-1">적립된 VN은 그대로 유지됩니다.</p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="p-4 bg-gradient-to-br from-[#1e3a5f]/20 to-background border-[#1e3a5f]/30">
