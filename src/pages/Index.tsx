@@ -74,8 +74,10 @@ const Index = () => {
         return;
       }
 
-      // 딥링크 없음: 일반 리다이렉트(구간②-B 로 남김 — 여기서 고치지 않음)
-      navigate('/dashboard', { replace: true });
+      // 구간②-B: 딥링크 없는 개인은 SupplierLayout(설문 목록·지갑)으로 착지.
+      //   위 urlSurveyId 분기와 같은 착지 — surveyId 처리만 없는 형태.
+      setUserMode('supplier');
+      setOnboardingStep('complete');
       return;
     }
 
@@ -122,7 +124,10 @@ const Index = () => {
       return;
     }
 
-    navigate('/dashboard', { replace: true });
+    // 구간②-B: 딥링크 없는 개인 신규가입도 SupplierLayout으로 착지.
+    setUserMode('supplier');
+    setOnboardingStep('complete');
+    setIsCompletingOnboarding(false);
   };
 
   // 로딩 중
