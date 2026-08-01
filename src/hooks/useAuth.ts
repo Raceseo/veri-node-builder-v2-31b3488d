@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { resolveActiveSurveyId } from '@/lib/pendingSurvey';
 
 export type UserType = 'individual' | 'enterprise';
 
@@ -33,7 +34,16 @@ export const useAuth = () => {
   };
 
   const signUp = async (email: string, password: string, displayName?: string, userType: UserType = 'individual', consentVersion?: string) => {
-    const redirectUrl = `${window.location.origin}/`;
+    // §10-2: 확인 메일 링크는 origin/ 로만 돌아오므로, 딥링크로 들어온 가입자는
+    //   메일을 다른 기기(휴대폰 메일앱 등)에서 열면 localStorage 스태시가 없어 설문을 잃는다.
+    //   → 가입 시점에 살아있는 surveyId 를 링크 쿼리에 실어 기기 간에도 생존시킨다.
+    //   읽기는 resolveActiveSurveyId(URL → 스태시 엿보기) — 소비/삭제하지 않음.
+    //   ※ Supabase Redirect URLs 허용목록은 쿼리스트링을 포함해 매칭하므로,
+    //     이 경로가 동작하려면 대시보드에 origin/* 형태의 와일드카드 등록이 필요하다.
+    const activeSurveyId = resolveActiveSurveyId();
+    const redirectUrl = activeSurveyId
+      ? `${window.location.origin}/?surveyId=${encodeURIComponent(activeSurveyId)}`
+      : `${window.location.origin}/`;
     const { error } = await supabase.auth.signUp({
       email,
       password,

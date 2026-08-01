@@ -28,6 +28,10 @@ const Auth = () => {
   // J-1-b: 회원가입 개인정보 수집·이용 동의 (필수) + 고지 펼침
   const [agreedPrivacy, setAgreedPrivacy] = useState(false);
   const [noticeOpen, setNoticeOpen] = useState(false);
+  // §10-2: 가입 성공 후 "인증 대기" 화면. 값이 있으면 그 주소로 메일을 보낸 상태.
+  //   이메일 인증이 켜지면 signUp 은 세션을 주지 않아 화면이 그대로 멈추므로,
+  //   폼을 감추고 다음 행동(메일함 확인)을 명시한다. 폼 잔류 → 재클릭 사고도 함께 막는다.
+  const [signupSentTo, setSignupSentTo] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -92,11 +96,18 @@ const Auth = () => {
       if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) {
+          // §10-2: 이메일 미인증 판정은 error.code('email_not_confirmed') 우선.
+          //   code 는 @supabase/auth-js 의 ErrorCode 유니온에 정의된 안정적 식별자이고,
+          //   error.message 영문 문구는 서버 변경 시 조용히 깨진다(→ '혼잡합니다'로 오분류).
+          //   구버전 서버 등으로 code 가 비어 오는 경우만 기존 문자열 매칭으로 폴백한다.
+          const isEmailNotConfirmed =
+            error.code === 'email_not_confirmed' ||
+            (!error.code && error.message.includes('Email not confirmed'));
           toast({
             title: '로그인 실패',
             description: error.message.includes('Invalid login credentials')
               ? '이메일 또는 비밀번호가 올바르지 않습니다.'
-              : error.message.includes('Email not confirmed')
+              : isEmailNotConfirmed
                 ? '이메일 인증이 완료되지 않았습니다. 메일함을 확인해주세요.'
                 : '인증 서버가 혼잡합니다. 잠시 후 다시 시도해 주세요.',
             variant: 'destructive',
@@ -115,10 +126,9 @@ const Auth = () => {
             variant: 'destructive',
           });
         } else {
-          toast({
-            title: '회원가입 성공',
-            description: '인증 이메일이 발송되었습니다. 메일함을 확인해주세요.',
-          });
+          // §10-2: 상세 안내는 아래 인증 대기 화면이 담당 → 토스트는 짧게.
+          setSignupSentTo(email);
+          toast({ title: '회원가입 성공', description: '인증 메일을 보냈습니다.' });
         }
       }
     } catch {
@@ -126,6 +136,20 @@ const Auth = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  /** §10-2: 인증 대기 화면 → 로그인 탭 복귀. 가입 폼 입력값을 전부 비운다. */
+  const backToLogin = () => {
+    setSignupSentTo(null);
+    setIsLogin(true);
+    setEmail('');
+    setPassword('');
+    setDisplayName('');
+    setUserType('individual');
+    setShowPassword(false);
+    setAgreedPrivacy(false);
+    setNoticeOpen(false);
+    setErrors({});
   };
 
   const canUsePasskey = isSupported && isLogin && hasPasskeyForEmail && !isCheckingPasskey;
@@ -144,6 +168,37 @@ const Auth = () => {
 
       {/* Auth Card */}
       <div className="w-full max-w-sm bg-card rounded-2xl p-6 border border-border shadow-sm">
+        {signupSentTo ? (
+          /* §10-2: 인증 대기 화면. 이메일 인증이 켜지면 가입 직후 세션이 없어
+             화면이 그대로 멈추므로, 폼을 감추고 다음 행동을 명시한다. */
+          <div className="flex flex-col items-center text-center space-y-4">
+            <div className="w-14 h-14 rounded-full bg-[#3182F6]/10 flex items-center justify-center">
+              <Mail className="w-7 h-7 text-[#3182F6]" />
+            </div>
+
+            <h2 className="text-xl font-bold text-foreground">인증 메일을 보냈습니다</h2>
+
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground break-all">{signupSentTo}</span>
+              {' '}로 보냈습니다
+            </p>
+
+            <div className="w-full text-left text-sm text-muted-foreground bg-muted rounded-xl p-4 space-y-2 border border-border">
+              <p>메일 속 링크를 눌러야 로그인할 수 있습니다.</p>
+              <p>메일이 보이지 않으면 스팸함을 확인해 주세요.</p>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={backToLogin}
+              className="w-full h-12 rounded-xl border-border text-foreground hover:bg-muted"
+            >
+              로그인 화면으로
+            </Button>
+          </div>
+        ) : (
+        <>
         {/* Tab Switch */}
         <div className="flex mb-6 bg-muted rounded-xl p-1">
           <button
@@ -342,6 +397,8 @@ const Auth = () => {
             </>
           )}
         </form>
+        </>
+        )}
       </div>
 
       <p className="text-muted-foreground text-xs mt-8">© {new Date().getFullYear()} VeriNode. All rights reserved.</p>

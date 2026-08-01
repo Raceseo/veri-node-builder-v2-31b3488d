@@ -11,7 +11,10 @@
  */
 
 const KEY = "verinode.pendingSurveyId";
-const TTL_MS = 2 * 60 * 60 * 1000; // 2시간
+// §10-2: Supabase Email OTP expiration(기본 3600초 = 1시간)과 정렬.
+//   확인 메일 링크가 죽은 뒤에도 스태시만 살아 있으면, 사용자는 링크가 만료돼
+//   로그인도 못 하는데 설문 딥링크만 남는 불일치 상태가 된다. 두 시한을 같게 둔다.
+const TTL_MS = 1 * 60 * 60 * 1000; // 1시간
 
 interface StashShape {
   surveyId: string;
@@ -65,6 +68,58 @@ export function consumePendingSurvey(): string | null {
   } catch {
     return null; // localStorage 접근 실패(조건2)
   }
+}
+
+/**
+ * §10-2 엿보기: 스태시를 **삭제하지 않고** 읽는다. 유효하지 않으면 null.
+ *
+ * consumePendingSurvey() 는 1회용이라 읽는 즉시 삭제되므로,
+ * "가입 메일의 redirect URL 을 만들 때"처럼 값이 이후에도 살아 있어야 하는 곳에서는
+ * 반드시 이 함수를 쓴다. (consume 을 쓰면 온보딩 완료 시점의 복원이 깨진다)
+ *
+ * 만료·손상 값이어도 여기서는 삭제하지 않는다 — 정리는 consume 쪽 책임.
+ */
+export function peekPendingSurvey(): string | null {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return null;
+
+    let parsed: StashShape | null = null;
+    try {
+      parsed = JSON.parse(raw) as StashShape;
+    } catch {
+      return null; // 손상 값 — 삭제는 consume 에 맡긴다
+    }
+
+    if (
+      !parsed ||
+      typeof parsed.surveyId !== "string" ||
+      !parsed.surveyId ||
+      typeof parsed.savedAt !== "number"
+    ) {
+      return null;
+    }
+    if (Date.now() - parsed.savedAt > TTL_MS) {
+      return null; // 만료
+    }
+    return parsed.surveyId;
+  } catch {
+    return null; // localStorage 접근 실패(조건2)
+  }
+}
+
+/**
+ * §10-2 현재 살아있는 surveyId 해석: ① 현재 URL 의 ?surveyId= → ② 스태시(엿보기).
+ * 둘 다 없으면 null. 어느 쪽도 소비/삭제하지 않는다.
+ */
+export function resolveActiveSurveyId(): string | null {
+  try {
+    const fromUrl = new URLSearchParams(window.location.search).get("surveyId");
+    if (fromUrl) return fromUrl;
+  } catch {
+    // location 접근 실패 — 스태시로 폴백
+  }
+  return peekPendingSurvey();
 }
 
 /** 삭제: 실패 시 조용히 무시(조건2). */
