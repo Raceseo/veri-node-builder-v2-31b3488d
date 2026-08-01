@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Mail, Lock, User, Eye, EyeOff, Fingerprint, Building2 } from 'lucide-react';
+import { Shield, Mail, Lock, User, Eye, EyeOff, Fingerprint, Building2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, UserType } from '@/hooks/useAuth';
 import { usePasskey } from '@/hooks/usePasskey';
 import { z } from 'zod';
+import { DATA_USAGE_NOTICE } from '@/lib/consentTexts';
 
 const emailSchema = z.string().email('유효한 이메일 주소를 입력하세요');
 const passwordSchema = z.string().min(6, '비밀번호는 최소 6자 이상이어야 합니다');
@@ -23,6 +25,9 @@ const Auth = () => {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [hasPasskeyForEmail, setHasPasskeyForEmail] = useState(false);
   const [isCheckingPasskey, setIsCheckingPasskey] = useState(false);
+  // J-1-b: 회원가입 개인정보 수집·이용 동의 (필수) + 고지 펼침
+  const [agreedPrivacy, setAgreedPrivacy] = useState(false);
+  const [noticeOpen, setNoticeOpen] = useState(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -80,6 +85,8 @@ const Auth = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
+    // J-1-b: 회원가입 시 개인정보 동의 미체크면 조기 차단(버튼 disabled와 이중). 로그인은 무관.
+    if (!isLogin && !agreedPrivacy) return;
     setIsSubmitting(true);
     try {
       if (isLogin) {
@@ -98,7 +105,7 @@ const Auth = () => {
           toast({ title: '로그인 성공', description: 'VeriNode에 오신 것을 환영합니다!' });
         }
       } else {
-        const { error } = await signUp(email, password, displayName || undefined, userType);
+        const { error } = await signUp(email, password, displayName || undefined, userType, DATA_USAGE_NOTICE.version);
         if (error) {
           toast({
             title: '회원가입 실패',
@@ -254,9 +261,43 @@ const Auth = () => {
             {errors.password && <p className="text-destructive text-xs mt-1">{errors.password}</p>}
           </div>
 
+          {/* J-1-b: 회원가입 전용 개인정보 수집·이용 동의 (필수). 로그인 탭에는 노출 안 함. */}
+          {!isLogin && (
+            <div className="space-y-2">
+              <label className="flex items-start gap-2 cursor-pointer">
+                <Checkbox
+                  checked={agreedPrivacy}
+                  onCheckedChange={(c) => setAgreedPrivacy(c === true)}
+                  className="mt-0.5"
+                />
+                <span className="text-sm text-foreground">[필수] 개인정보 수집·이용에 동의합니다</span>
+              </label>
+              {/* 수집 항목 상시 노출 (아코디언 접힘·펼침과 무관). 문안 단일 출처 = consentTexts.ts */}
+              <p className="text-[11px] text-muted-foreground pl-6">
+                수집 항목: {DATA_USAGE_NOTICE.collected.join(', ')}
+              </p>
+              <button
+                type="button"
+                onClick={() => setNoticeOpen((v) => !v)}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground pl-6"
+              >
+                수집·이용 내용 보기 {noticeOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
+              {noticeOpen && (
+                <div className="text-xs text-muted-foreground bg-muted rounded-lg p-3 space-y-1 border border-border ml-6">
+                  <p><span className="font-medium text-foreground">수집 항목</span>: {DATA_USAGE_NOTICE.collected.join(', ')}</p>
+                  <p><span className="font-medium text-foreground">이용 목적</span>: {DATA_USAGE_NOTICE.purpose.join(', ')}</p>
+                  <p><span className="font-medium text-foreground">미수집</span>: {DATA_USAGE_NOTICE.notCollected.join(', ')}</p>
+                  <p><span className="font-medium text-foreground">보유 기간</span>: {DATA_USAGE_NOTICE.retentionPeriod}</p>
+                  <p className="text-amber-600">{DATA_USAGE_NOTICE.refusalConsequence}</p>
+                </div>
+              )}
+            </div>
+          )}
+
           <Button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || (!isLogin && !agreedPrivacy)}
             className="w-full bg-[#3182F6] hover:bg-[#2563EB] text-white font-medium py-6 rounded-xl"
           >
             {isSubmitting ? (

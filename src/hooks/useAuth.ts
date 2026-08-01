@@ -32,7 +32,7 @@ export const useAuth = () => {
     return { error };
   };
 
-  const signUp = async (email: string, password: string, displayName?: string, userType: UserType = 'individual') => {
+  const signUp = async (email: string, password: string, displayName?: string, userType: UserType = 'individual', consentVersion?: string) => {
     const redirectUrl = `${window.location.origin}/`;
     const { error } = await supabase.auth.signUp({
       email,
@@ -42,6 +42,9 @@ export const useAuth = () => {
         data: {
           display_name: displayName,
           user_type: userType,
+          // J-1-b: 가입 시 개인정보 수집·이용 동의 버전. 서버 트리거(handle_new_user)가
+          //        raw_user_meta_data 에서 읽어 data_usage_consents 에 기록. agreed_at 은 서버 now().
+          consent_version: consentVersion,
         },
       },
     });

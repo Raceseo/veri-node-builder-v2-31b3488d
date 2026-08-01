@@ -35,10 +35,10 @@ export const SURVEY_ETHICS = {
  */
 export const DATA_USAGE_NOTICE = {
   consentType: "data_usage",
-  version: "data_usage/2026-07-31.v1",
-  collected: ["이메일", "이름(표시 이름)", "설문 응답 내용", "응답 소요시간·타이핑 속도(성실 응답 확인용)"],
+  version: "data_usage/2026-08-01.v2",
+  collected: ["이메일", "이름(선택)", "가입 유형(개인/기업)", "설문 응답 내용", "응답 소요시간·타이핑 속도(성실 응답 확인용)"],
   purpose: ["설문 데이터 제공", "보상(VN) 지급"],
   notCollected: ["금융정보", "위치정보", "IP 주소"],
-  refusalConsequence: "동의하지 않으면 설문에 참여할 수 없습니다.",
-  // retentionPeriod: (미확정 — Ray 확정 + 전문가 확인 후 추가)
+  retentionPeriod: "회원 탈퇴 시까지. 단, 관계 법령에 따른 보존 기간",
+  refusalConsequence: "동의하지 않으면 가입할 수 없습니다.",
 } as const;
