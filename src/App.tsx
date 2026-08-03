@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
+import RootEntry from "./pages/RootEntry";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Enterprise from "./pages/Enterprise";
@@ -33,14 +33,11 @@ const App = () => (
           {/* Payment complete callback (public for mobile redirect) */}
           <Route path="/payment/complete" element={<PaymentComplete />} />
           
-          {/* Main app - protected (개인 사용자용 모바일) */}
-          <Route path="/" element={
-            <ProtectedRoute>
-              <ProfileProvider>
-                <Index />
-              </ProfileProvider>
-            </ProtectedRoute>
-          } />
+          {/* Main app - 공개 진입점 (B-19).
+              RootEntry 가 세션을 보고 분기한다:
+                비로그인 → 랜딩(IntroView) / 로그인 → ProfileProvider + Index.
+              ⚠️ ProtectedRoute 를 여기서 뗀 것은 의도된 변경이다. 아래 보호 라우트는 그대로. */}
+          <Route path="/" element={<RootEntry />} />
           
           {/* Dashboard - protected */}
           <Route path="/dashboard" element={
