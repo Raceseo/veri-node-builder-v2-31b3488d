@@ -47,7 +47,7 @@ const SocialPromiseView = ({ onComplete, displayName = "사용자" }: SocialProm
       return;
     }
 
-    // 서명 애니메이션
+    // 동의 처리 애니메이션
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     setIsSigned(true);
@@ -116,7 +116,7 @@ const SocialPromiseView = ({ onComplete, displayName = "사용자" }: SocialProm
           })}
         </div>
 
-        {/* 서명 영역 */}
+        {/* 서약 동의 영역 */}
         <div className="bg-card border border-border rounded-2xl p-6 mb-6">
           <div className="text-center">
             {isSigned ? (
@@ -124,7 +124,7 @@ const SocialPromiseView = ({ onComplete, displayName = "사용자" }: SocialProm
                 <div className="w-16 h-16 mx-auto bg-green-500/20 rounded-full flex items-center justify-center animate-stamp-appear">
                   <CheckCircle className="w-8 h-8 text-green-500" />
                 </div>
-                <p className="text-green-500 font-semibold">서명 완료</p>
+                <p className="text-green-500 font-semibold">동의 완료</p>
                 <p className="text-sm text-muted-foreground">
                   {new Date().toLocaleDateString('ko-KR')} 서약 체결
                 </p>
@@ -140,15 +140,19 @@ const SocialPromiseView = ({ onComplete, displayName = "사용자" }: SocialProm
                   <CheckCircle className="w-5 h-5" />
                   <span className="text-sm">서약 동의</span>
                 </div>
-                <div className="h-20 border-2 border-dashed border-border rounded-lg flex items-center justify-center">
+                {/* B-21: 점선 테두리(= "여기에 입력·서명하세요")를 걷어내고
+                    연한 배경의 안내 영역으로 성격을 바꾼다. 서명 데이터를 받지 않으므로
+                    받는 척하는 UI 를 두지 않고, 그 자리에 "실제로 무엇이 기록되는지"를 밝힌다.
+                    높이(h-20)는 유지 — 없애면 카드가 비어 서명 후 상태와 높이가 튄다. */}
+                <div className="h-20 bg-muted rounded-lg flex items-center justify-center px-4">
                   {isSigning ? (
                     <div className="flex items-center gap-2 text-primary">
                       <div className="w-3 h-3 bg-primary rounded-full animate-pulse" />
-                      <span className="text-sm">서명 처리 중...</span>
+                      <span className="text-sm">동의 기록 중...</span>
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      아래 버튼을 클릭하여 서명하세요
+                      동의하시면 동의한 날짜와 내용이 기록됩니다
                     </p>
                   )}
                 </div>
@@ -157,20 +161,22 @@ const SocialPromiseView = ({ onComplete, displayName = "사용자" }: SocialProm
           </div>
         </div>
 
-        {/* 서명 버튼 */}
+        {/* 동의 버튼 */}
         <Button
           onClick={handleSign}
           disabled={!allAgreed || isSigning || isSigned}
           className="w-full h-14 bg-gradient-primary hover:opacity-90 text-base font-semibold"
         >
+          {/* B-21: 버튼 3개 상태의 "서명" 표현도 함께 정리.
+              위 안내가 "동의 기록 중..."인데 버튼만 "서명 중..."이면 같은 순간에 모순된다. */}
           {isSigning ? (
-            <>서명 중...</>
+            <>동의 기록 중...</>
           ) : isSigned ? (
-            <>✓ 서명 완료</>
+            <>✓ 동의 완료</>
           ) : (
             <>
               <FileSignature className="w-5 h-5 mr-2" />
-              서약서에 서명하기
+              서약에 동의합니다
             </>
           )}
         </Button>
