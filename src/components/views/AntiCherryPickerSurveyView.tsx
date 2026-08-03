@@ -323,7 +323,13 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
         .from('profiles').select('trust_score, is_verified').eq('id', user.id).single();
       if (profileFetchError) return;
       if (currentProfile?.is_verified) { setCurrentStep("complete"); return; }
-      const currentTrustScore = currentProfile?.trust_score || 65;
+      // B-26: `|| 65` → `?? 0`.
+      //   65 는 옛 DB 기본값(profiles.trust_score DEFAULT 65)을 반영한 값이었으나,
+      //   현재 handle_new_user 트리거가 trust_score 에 0 을 명시적으로 넣는다
+      //   (20260422221437_catch_up_schema_for_app_parity.sql:51-56).
+      //   0 은 falsy 라 `||` 폴백이 신규 사용자 전원에게 발동해, 설계 의도인
+      //   +5/+15 대신 0 → 70/80 으로 뛰었다. 0 은 유효한 값이므로 폴백 대상이 아니다.
+      const currentTrustScore = currentProfile?.trust_score ?? 0;
       const newTrustScore = Math.min(currentTrustScore + (isFullyLinked ? 15 : 5), 100);
       // ⚠️ 구간④-후속(TODO): 인증 모드 VN 보상은 아직 Edge Function 이관 전이라 지급 보류.
       //    보안 규칙 #4 + protect_vn_balance 트리거로 프론트의 vn_balance 직접 수정은 금지/차단됨.
