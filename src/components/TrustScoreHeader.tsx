@@ -115,11 +115,16 @@ const TrustScoreHeader = ({
 
         {/* Info Row */}
         <div className="flex items-center justify-between text-sm">
+          {/* B-25: 점수 상승 경로는 실재하나(AntiCherryPickerSurveyView 인증 모드가
+              trust_score 를 +5/+15 갱신) is_verified 게이트로 최초 1회 한정이다(:325).
+              "인증을 완료하면"은 이미 인증한 사용자에게도 계속 보여 오해를 준다 → 1회성 명시.
+              오른쪽은 "올릴 수 있어요"라는 약속을 걷어내고 남은 점수만 사실로 표시한다.
+              (최대 상승 폭은 +15 라 "N% 더 올릴 수 있어요"는 도달 불가능한 약속이었다) */}
           <span className="text-primary-foreground/70">
-            인증을 완료하면 점수가 올라가요
+            첫 데이터 인증 시 점수가 올라가요
           </span>
           <span className="font-medium text-trust-light">
-            {Math.round(100 - percentage)}% 더 올릴 수 있어요
+            남은 점수 {Math.round(100 - percentage)}점
           </span>
         </div>
       </div>

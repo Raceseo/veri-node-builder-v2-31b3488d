@@ -124,8 +124,11 @@ const SupplierHomeTab = ({
                   <Shield className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-foreground">AI 인증</p>
-                  <p className="text-xs text-muted-foreground">신뢰점수 올리기</p>
+                  {/* B-25: "AI 인증" → AI 가 하는 일은 맞춤 질문 생성(verinode-ai
+                      generate_contextual_questions)이지 인증 판정이 아니다.
+                      "AI 가 인증한다"가 아니라 "AI 가 만든 질문으로 인증한다"가 실제. */}
+                  <p className="text-sm font-semibold text-foreground">데이터 인증</p>
+                  <p className="text-xs text-muted-foreground">설문으로 신뢰점수 올리기</p>
                 </div>
               </div>
             </Card>

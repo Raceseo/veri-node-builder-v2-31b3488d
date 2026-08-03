@@ -182,7 +182,8 @@ const SocialPromiseView = ({ onComplete, displayName = "사용자" }: SocialProm
         </Button>
 
         <p className="text-xs text-center text-muted-foreground mt-4">
-          이 서약은 VeriNode 플랫폼의 데이터 무결성을 보장하기 위한 것입니다.
+          {/* B-25: "보장하기" → 단정. 지킬 근거가 없는 표현을 걷어낸다 */}
+          이 서약은 VeriNode 플랫폼의 데이터 무결성을 지키기 위한 것입니다.
           <br />
           서약 위반 시 계정 제한 및 보상 회수 조치가 취해질 수 있습니다.
         </p>
