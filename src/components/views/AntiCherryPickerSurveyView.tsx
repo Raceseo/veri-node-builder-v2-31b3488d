@@ -371,18 +371,23 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
         score_change: isFullyLinked ? 15 : 5, vn_earned: 0, // 보상 이관 전까지 0 (reward_pending)
         result: { type: 'first_verification', passed: true, mydata_linked: isFullyLinked, reward_pending: true, timestamp: new Date().toISOString() }
       });
+      queryClient.invalidateQueries({ queryKey: ['profile', user.id] });
+      queryClient.invalidateQueries({ queryKey: ['home-profile'] });
+
+      // B-33: use-toast 의 TOAST_LIMIT = 1 이라, 같은 틱에 toast() 를 두 번 부르면
+      //   먼저 것은 화면에 그려진 적도 없이 slice 에 잘린다(v113 실측에서 실증 —
+      //   빨간 실패 알림이 초록 성공 알림에 덮여 "조용한 실패의 알림"이 조용히 실패했다).
+      //   → 한 완료 시점에 토스트는 반드시 1개. 실패 시 성공 토스트를 띄우지 않는다.
       if (historyInsertError) {
         console.error("verification_history insert failed:", historyInsertError);
         toast({
-          title: "기록을 저장하지 못했습니다",
-          description: "인증은 완료되었습니다. 내역 화면에 표시되지 않을 수 있습니다.",
+          title: "인증은 완료됐지만 기록을 저장하지 못했습니다",
+          description: "내역 화면에 표시되지 않을 수 있습니다.",
           variant: "destructive",
         });
+      } else {
+        toast({ title: "✅ 인증 완료!", description: `신뢰도 +${isFullyLinked ? 15 : 5}점 상승 (보상은 준비 중)` });
       }
-
-      queryClient.invalidateQueries({ queryKey: ['profile', user.id] });
-      queryClient.invalidateQueries({ queryKey: ['home-profile'] });
-      toast({ title: "✅ 인증 완료!", description: `신뢰도 +${isFullyLinked ? 15 : 5}점 상승 (보상은 준비 중)` });
       return true;
     } catch (error) {
       console.error("Verification update error:", error);
