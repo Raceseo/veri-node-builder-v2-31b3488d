@@ -24,14 +24,18 @@ const DualModeEntryView = ({ onComplete }: DualModeEntryViewProps) => {
   };
 
   // Entry Selection Screen
+  // B-22: 반응형 분기가 없어 휴대폰 세로에서도 좌우 분할이 강제됐다.
+  //   360px 화면 기준 한쪽 콘텐츠 폭이 116px 뿐이라 문구가 4~6줄로 쪼개졌다.
+  //   md(768px) 미만은 세로로 쌓고, 각 패널에 min-h-[50vh] 를 주어
+  //   스크롤 없이 두 선택지가 한 화면에 들어오게 한다.
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex flex-col md:flex-row">
       {/* Individual Side - Bright & Friendly */}
       <motion.div
         initial={{ opacity: 0, x: -50 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6 }}
-        className="flex-1 bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-100 flex flex-col items-center justify-center p-8 relative overflow-hidden cursor-pointer group"
+        className="flex-1 min-h-[50vh] md:min-h-0 bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-100 flex flex-col items-center justify-center p-8 relative overflow-hidden cursor-pointer group"
         onClick={handleSelectIndividual}
       >
         {/* Decorative Elements */}
@@ -82,7 +86,7 @@ const DualModeEntryView = ({ onComplete }: DualModeEntryViewProps) => {
         initial={{ opacity: 0, x: 50 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6, delay: 0.1 }}
-        className="flex-1 bg-gradient-to-br from-slate-900 via-navy-dark to-slate-950 flex flex-col items-center justify-center p-8 relative overflow-hidden cursor-pointer group"
+        className="flex-1 min-h-[50vh] md:min-h-0 bg-gradient-to-br from-slate-900 via-navy-dark to-slate-950 flex flex-col items-center justify-center p-8 relative overflow-hidden cursor-pointer group"
         onClick={handleSelectEnterprise}
       >
         {/* Decorative Elements */}
