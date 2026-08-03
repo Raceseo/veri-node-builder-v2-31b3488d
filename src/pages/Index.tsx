@@ -81,7 +81,10 @@ const Index = () => {
       return;
     }
 
-    setOnboardingStep('intro');
+    // B-20: 랜딩(IntroView)은 가입 전에 RootEntry 가 이미 보여줬다.
+    //   여기서 다시 'intro' 로 보내면 가입 직후 같은 화면이 한 번 더 떠서
+    //   "가입이 안 됐나?" 하는 혼란을 준다. → 온보딩 2단계부터 시작한다.
+    setOnboardingStep('sovereignty');
   }, [profile, isLoading, navigate]);
 
   const completeOnboarding = async (type: 'individual' | 'enterprise' | null) => {
@@ -136,6 +139,8 @@ const Index = () => {
   }
 
   // 온보딩 플로우
+  // B-19 이후 비로그인 랜딩(RootEntry)이 담당한다. 이 경로는 도달하지 않음.
+  // 되돌릴 여지를 위해 남겨둠.
   if (onboardingStep === 'intro') {
     return (
       <Suspense fallback={<LoadingSpinner />}>
