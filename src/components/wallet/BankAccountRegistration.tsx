@@ -62,7 +62,9 @@ const BankAccountRegistration = ({ onRegistered }: BankAccountRegistrationProps)
       
       // 계좌 등록 감사 로그 (강화된 구조)
       // 위변조 방지를 위해 중요 필드 포함 및 해시 처리(백엔드 로직 가정)
-      await supabase.from('withdrawal_audit_logs').insert({
+      // B-30 (가) 차단: 감사 로그가 없는데 "계좌가 등록되었습니다"라고 말하면,
+      //   분쟁 시 본인인증을 거쳤다는 증거가 남지 않는다. 실패하면 등록을 막는다.
+      const { error: auditLogError } = await supabase.from('withdrawal_audit_logs').insert({
         user_id: user!.id,
         action: 'bank_account_registered',
         ip_address: 'client_ip_placeholder',
@@ -78,6 +80,14 @@ const BankAccountRegistration = ({ onRegistered }: BankAccountRegistrationProps)
         }
       });
 
+      if (auditLogError) {
+        console.error('withdrawal_audit_logs insert failed:', auditLogError);
+        toast.error("계좌를 등록하지 못했습니다", {
+          description: "다시 시도해 주세요.",
+        });
+        return;
+      }
+
       toast.success("본인 인증 완료 - 계좌가 등록되었습니다", {
         description: `${bankName} ${accountNumber.slice(-4).padStart(accountNumber.length, '*')}`,
         duration: 5000,
@@ -86,9 +96,10 @@ const BankAccountRegistration = ({ onRegistered }: BankAccountRegistrationProps)
       setIsRegistered(true);
       onRegistered?.();
     } catch (error: any) {
+      // B-30: error.message 원문 노출 제거 — 원인은 콘솔에만 남긴다(원칙 2).
       console.error('Account registration error:', error);
-      toast.error("계좌 등록 중 오류가 발생했습니다", {
-        description: error.message
+      toast.error("계좌를 등록하지 못했습니다", {
+        description: "다시 시도해 주세요.",
       });
     } finally {
       setIsSubmitting(false);

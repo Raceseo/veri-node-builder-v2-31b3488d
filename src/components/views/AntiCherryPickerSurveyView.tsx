@@ -314,15 +314,25 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
     }
   }, [currentStep, linkedData, isDbSurveyMode, surveyId]);
 
-  const updateProfileVerification = async () => {
+  /** B-30: 성공 여부를 반환한다. 호출부는 true 일 때만 완료 화면으로 넘어간다. */
+  const updateProfileVerification = async (): Promise<boolean> => {
     setIsUpdatingProfile(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) return false;
       const { data: currentProfile, error: profileFetchError } = await supabase
         .from('profiles').select('trust_score, is_verified').eq('id', user.id).single();
-      if (profileFetchError) return;
-      if (currentProfile?.is_verified) { setCurrentStep("complete"); return; }
+      if (profileFetchError) {
+        // B-30: 기존에는 조용히 return 해 사용자가 스캔 화면에 갇혔다.
+        console.error("profiles fetch failed:", profileFetchError);
+        toast({
+          title: "인증을 완료하지 못했습니다",
+          description: "다시 시도해 주세요. 점수는 아직 반영되지 않았습니다.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      if (currentProfile?.is_verified) { setCurrentStep("complete"); return true; }
       // B-26: `|| 65` → `?? 0`.
       //   65 는 옛 DB 기본값(profiles.trust_score DEFAULT 65)을 반영한 값이었으나,
       //   현재 handle_new_user 트리거가 trust_score 에 0 을 명시적으로 넣는다
@@ -335,21 +345,53 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
       //    보안 규칙 #4 + protect_vn_balance 트리거로 프론트의 vn_balance 직접 수정은 금지/차단됨.
       //    여기서는 인증(is_verified)·신뢰도(trust_score)만 갱신하고, 보상 지급은 후속 세션에서
       //    claim-verification-reward(가칭) Edge Function 으로 이관 예정. (claim-survey-reward 참고)
-      await supabase.from('profiles').update({
+      // B-30 (가) 차단: 인증의 본체다. 실패했는데 "인증 완료"라고 말하면
+      //   사용자는 점수가 오른 줄 알고 떠난다. 실패 시 완료 화면으로 넘기지 않는다.
+      const { error: profileUpdateError } = await supabase.from('profiles').update({
         is_verified: true,
         trust_score: newTrustScore, updated_at: new Date().toISOString()
       }).eq('id', user.id);
-      await supabase.from('verification_history').insert({
+      if (profileUpdateError) {
+        console.error("profiles update failed:", profileUpdateError);
+        toast({
+          title: "인증을 완료하지 못했습니다",
+          description: "다시 시도해 주세요. 점수는 아직 반영되지 않았습니다.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // B-30 (나) 알림: 이 INSERT 는 현재 RLS 상 반드시 실패한다(B-29).
+      //   정책 "시스템만 삽입가능"이 service_role 만 허용하는데 여기서는 authenticated 로 실행된다.
+      //   (가) 차단을 걸면 인증 완주 자체가 막히므로, 이관 전까지는 알림만 띄우고 진행시킨다.
+      //   ⚠️ B-29 이관 시 (가) 차단으로 승격
+      const { error: historyInsertError } = await supabase.from('verification_history').insert({
         user_id: user.id, verification_type: 'identity_verification',
         trust_score_before: currentTrustScore, trust_score_after: newTrustScore,
         score_change: isFullyLinked ? 15 : 5, vn_earned: 0, // 보상 이관 전까지 0 (reward_pending)
         result: { type: 'first_verification', passed: true, mydata_linked: isFullyLinked, reward_pending: true, timestamp: new Date().toISOString() }
       });
+      if (historyInsertError) {
+        console.error("verification_history insert failed:", historyInsertError);
+        toast({
+          title: "기록을 저장하지 못했습니다",
+          description: "인증은 완료되었습니다. 내역 화면에 표시되지 않을 수 있습니다.",
+          variant: "destructive",
+        });
+      }
+
       queryClient.invalidateQueries({ queryKey: ['profile', user.id] });
       queryClient.invalidateQueries({ queryKey: ['home-profile'] });
       toast({ title: "✅ 인증 완료!", description: `신뢰도 +${isFullyLinked ? 15 : 5}점 상승 (보상은 준비 중)` });
+      return true;
     } catch (error) {
       console.error("Verification update error:", error);
+      toast({
+        title: "인증을 완료하지 못했습니다",
+        description: "다시 시도해 주세요. 점수는 아직 반영되지 않았습니다.",
+        variant: "destructive",
+      });
+      return false;
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -464,7 +506,8 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
         .then(() => claimSurveyReward())
         .then(() => setCurrentStep("complete"));
     } else {
-      updateProfileVerification().then(() => setCurrentStep("complete"));
+      // B-30 (가) 차단: 실패하면 완료 화면으로 넘어가지 않는다.
+      updateProfileVerification().then((ok) => { if (ok) setCurrentStep("complete"); });
     }
   }, [currentStep, scanProgress, isDbSurveyMode]);
 

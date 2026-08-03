@@ -77,13 +77,16 @@ const IdentityVerificationDialog = ({
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase.from('withdrawal_audit_logs').insert({
+        // B-30 (다) 조용히 로그: 부가 로깅이라 실패해도 본인인증 흐름 자체는 유효하다.
+        //   사용자에게 알릴 내용이 아니므로 기존 catch 와 같은 console.error 로 흘려보낸다.
+        const { error: auditLogError } = await supabase.from('withdrawal_audit_logs').insert({
           user_id: user.id,
           action: type,
           ip_address: 'client-side',
           details: details,
           created_at: new Date().toISOString()
         });
+        if (auditLogError) console.error("Security log failed", auditLogError);
       }
     } catch (e) {
       console.error("Security log failed", e);
