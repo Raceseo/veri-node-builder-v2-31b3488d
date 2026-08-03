@@ -7,11 +7,16 @@
 
 export const ONBOARDING_PLEDGE = {
   consentType: "onboarding_pledge",
-  version: "onboarding_pledge/2026-07-31.v1",
+  // B-21(2026-08-03) v1 → v2: accuracy 항목에서 "AI 검증을 위한" 삭제.
+  //   프로필을 AI가 검증하는 경로가 살아있지 않다 —
+  //   analyze5W1H("profile_update") 호출부는 HomeTab.tsx 하나뿐인데 그 파일이
+  //   어디서도 import되지 않는 dead 코드다(백로그 B-24).
+  //   서약은 법적 성격이 있어, 근거 없는 검증 주장을 남기지 않는다.
+  version: "onboarding_pledge/2026-08-03.v2",
   items: [
     { key: "ownership", title: "데이터 소유권 인지", description: "본인이 제공하는 모든 데이터의 소유권은 본인에게 있으며, VeriNode는 본인의 명시적 동의 하에서만 이를 관리한다는 것을 이해합니다." },
     { key: "honesty", title: "정직한 데이터 공급", description: "모든 설문 응답과 제공 데이터는 진실에 기반하여 작성하겠습니다." },
-    { key: "accuracy", title: "정확한 정보 제공", description: "AI 검증을 위한 프로필 정보를 정확하게 입력하겠습니다." },
+    { key: "accuracy", title: "정확한 정보 제공", description: "프로필 정보를 사실대로 입력하겠습니다." },
     { key: "responsibility", title: "책임 있는 참여", description: "허위 응답이나 조작된 데이터 제공 시 발생하는 불이익을 수용합니다." },
   ],
 } as const;

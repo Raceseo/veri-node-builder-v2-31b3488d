@@ -15,8 +15,10 @@ const SovereigntyDeclarationView = ({ onComplete }: SovereigntyDeclarationViewPr
     {
       icon: Lock,
       emoji: "🔒",
-      title: "완벽한 통제",
-      description: "언제든 데이터를 연결하거나 끊을 수 있습니다.",
+      // B-21: "완벽한 통제 / 언제든 연결하거나 끊을 수 있습니다" → 마이데이터 연결은
+      //   정의서 §4 3단계로 미구현. 연결할 대상 자체가 없어 지킬 수 없는 약속이었다.
+      title: "참여 선택권",
+      description: "설문마다 참여 여부를 직접 정합니다.",
       color: "from-blue-400 to-indigo-500",
     },
     {
@@ -29,8 +31,10 @@ const SovereigntyDeclarationView = ({ onComplete }: SovereigntyDeclarationViewPr
     {
       icon: ShieldCheck,
       emoji: "🛡️",
-      title: "철저한 보호",
-      description: "당신의 허락 없이는 누구도 데이터를 볼 수 없습니다.",
+      // B-21: "누구도 볼 수 없습니다"는 운영자·DB 관리자를 포함할 수 없어 거짓이었다.
+      //   실제 구조(RLS + 동의 기록)와 일치하도록 제3자 제공으로 범위를 한정한다.
+      title: "데이터 보호",
+      description: "동의 없이는 제3자에게 제공하지 않습니다.",
       color: "from-emerald-400 to-teal-500",
     },
   ];
@@ -177,11 +181,14 @@ const SovereigntyDeclarationView = ({ onComplete }: SovereigntyDeclarationViewPr
               />
             </g>
             
-            {/* VERIFIED text arc */}
+            {/* 인장 문구 (I-3 / B-21)
+                기존 "VERIFIED • SOVEREIGN" 은 검증됐다고 말하지만, 이 화면은
+                handleSign 에서 DB 기록을 전혀 하지 않는다(recordConsent 호출 없음).
+                검증된 것이 없으므로 VERIFIED 를 걷어내고 주제 표기만 남긴다. */}
             <path id="textArc" d="M 15,50 A 35,35 0 1,1 85,50" fill="none" />
             <text fontSize="7" fill="#fbbf24" fontWeight="bold" letterSpacing="2">
               <textPath href="#textArc" startOffset="15%">
-                VERIFIED • SOVEREIGN
+                DATA SOVEREIGNTY
               </textPath>
             </text>
           </svg>

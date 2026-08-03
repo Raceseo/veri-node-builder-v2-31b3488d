@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Shield, CheckCircle, FileSignature, Fingerprint, AlertTriangle, KeyRound } from "lucide-react";
+import { Shield, CheckCircle, FileSignature, AlertTriangle, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
@@ -131,9 +131,14 @@ const SocialPromiseView = ({ onComplete, displayName = "사용자" }: SocialProm
               </div>
             ) : (
               <div className="space-y-4">
+                {/* I-3 / B-21: "전자 서명" + 지문 아이콘 → 서명 데이터를 받는 것처럼
+                    보이지만 실제로 저장되는 것은 동의 기록뿐이다.
+                    recordConsent 가 넣는 값: user_id / consent_type / consent_version /
+                    is_agreed / agreed_at / user_agent — 서명 이미지·이름·생체정보 없음.
+                    지문 아이콘은 생체 인증까지 연상시켜 함께 교체한다. */}
                 <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                  <Fingerprint className="w-5 h-5" />
-                  <span className="text-sm">전자 서명</span>
+                  <CheckCircle className="w-5 h-5" />
+                  <span className="text-sm">서약 동의</span>
                 </div>
                 <div className="h-20 border-2 border-dashed border-border rounded-lg flex items-center justify-center">
                   {isSigning ? (

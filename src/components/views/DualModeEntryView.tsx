@@ -1,5 +1,5 @@
 import {
-  User, Building2, ArrowRight, Shield, Sparkles,
+  User, Building2, ArrowRight, Shield,
   TrendingUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -57,18 +57,20 @@ const DualModeEntryView = ({ onComplete }: DualModeEntryViewProps) => {
             <span className="text-trust font-semibold">정당한 보상</span>을 받으세요
           </p>
 
+          {/* B-21: "데이터 신뢰 점수 2배 상승" 항목 삭제.
+              무엇 대비 2배인지 근거가 없고(구간F에서 걷어낸 "보상 5배"와 동형),
+              신뢰 점수가 실제로 적립되는지도 확인되지 않았다.
+              확인 안 된 것을 다른 말로 바꿔 남기면 같은 문제가 반복되므로,
+              구현이 확인되면 그때 다시 넣는다. */}
           <div className="space-y-3 mb-8">
-            <div className="flex items-center gap-3 text-left bg-white/60 backdrop-blur-sm rounded-xl p-3">
-              <Sparkles className="w-5 h-5 text-amber-500" />
-              <span className="text-sm text-slate-700">데이터 신뢰 점수 2배 상승</span>
-            </div>
             <div className="flex items-center gap-3 text-left bg-white/60 backdrop-blur-sm rounded-xl p-3">
               <TrendingUp className="w-5 h-5 text-emerald-500" />
               <span className="text-sm text-slate-700">설문 참여로 VN 토큰 적립</span>
             </div>
             <div className="flex items-center gap-3 text-left bg-white/60 backdrop-blur-sm rounded-xl p-3">
               <Shield className="w-5 h-5 text-trust" />
-              <span className="text-sm text-slate-700">완벽한 데이터 주권 보장</span>
+              {/* B-21: "완벽한 데이터 주권 보장" → 검증 1층이 모형이라 "보장" 근거 없음 */}
+              <span className="text-sm text-slate-700">동의한 범위만 제공</span>
             </div>
           </div>
 

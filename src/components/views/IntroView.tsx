@@ -75,7 +75,9 @@ const IntroView = ({ onStart }: IntroViewProps) => {
 
       {/* Feature Pills */}
       <div className="flex flex-wrap justify-center gap-2 mt-8 max-w-sm animate-fade-in" style={{ animationDelay: '1.1s', animationFillMode: 'both' }}>
-        {['안전한 데이터 관리', '투명한 수익 창출', '완벽한 개인정보 보호'].map((feature, i) => (
+        {/* B-21: "안전한·투명한·완벽한" 3개 모두 검증되지 않은 수식어였다.
+            지킬 수 있는 사실만 남긴다(정의서 §5). */}
+        {['내 데이터 직접 관리', '설문 참여로 보상 적립', '내 정보는 내가 관리'].map((feature, i) => (
           <div 
             key={feature}
             className="px-4 py-2 rounded-full bg-trust/10 border border-trust/30 text-white/80 text-sm"
