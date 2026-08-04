@@ -139,6 +139,16 @@ line-item 제거 지시를 받으면 "제거 후 껍데기가 되는 카드"도 
 /?surveyId=<uuid> → "← 돌아가기" → 하단 "수익 쌓기" 탭
 화면명 "수익 쌓기" = 코드명 earn
 
+### 배포 3점 대조 (2026-08-04 추가, B-35)
+1. **GitHub에 커밋 존재** — `git log origin/main`
+2. **Lovable 수신** — 커밋 목록에 보이는가
+3. **실물 서버 반영** — **파일 지문(`index-*.js` 해시) 변경**
+
+셋 중 하나라도 어긋나면 **배포 안 된 것**이다.
+⚠️ **Lovable UI의 "Published" 표시는 ③의 증거가 아니다.**
+2026-08-04 실측: GitHub `ebcef2e` + "Published" 표시인데 실물은 `39f23ca` 시점
+번들(`index-CDwlQRHC.js`)을 그대로 서빙했다(검사 6회, 캐시 아님).
+
 ### 검증 규칙
 - 돈 관련 기능은 3점 대조: 화면 ↔ profiles.vn_balance ↔ survey_reward_claims
 - 3점 일치 전 커밋 금지
