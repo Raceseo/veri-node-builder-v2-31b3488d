@@ -82,10 +82,6 @@
   Claude Code가 DB에 직접 실행하지 않음.
 - **MCP 도구**: 구 프로젝트 `erkmtsgrbsjdudiofuxw`(INACTIVE)에만 접근 가능 — 앱과 무관하므로 사용하지 않음.
 
-## 수요 검증 Go 판정 후 재개할 과제
-
-- `has_role(uuid, text)` 함수 erkmt에 정의
-
 ## VeriNode DB 보안 규칙 (필수)
 1. 새 테이블 생성 시 반드시 같은 마이그레이션에 ENABLE ROW LEVEL SECURITY와 RLS 정책을 포함할 것
 2. RLS 정책에 USING (true) / WITH CHECK (true) 금지 (공개 읽기 전용 SELECT만 예외)
