@@ -29,3 +29,6 @@ dist-ssr
 # (docs/lovable-supabase-sync.md, CLAUDE.md 참조)
 # 신규 세팅 시: cp .env.example .env
 .env
+
+# Supabase CLI 로컬 작업 파일 (프로젝트 ref 등) — 커밋 대상 아님
+supabase/.temp/
