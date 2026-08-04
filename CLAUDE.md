@@ -35,7 +35,8 @@
 - supabase/config.toml은 임의 수정 금지 (민감 함수 JWT 설정 포함, B-14 검토 대기)
 - 기존 마이그레이션 파일은 수정하지 말고 새 마이그레이션을 추가할 것
 - 세션 시작 시 앱 정의서를 먼저 확인할 것
-
+- 앱 정의서 위치: ~/Library/CloudStorage/GoogleDrive-<계정>/내 드라이브/
+  01 Ray Knowledge/01 Projects/03 Verinode/00사업계획서/앱 정의서/
 <!--
 이 파일은 복사본입니다. 원본은 옵시디언 'VeriNode 작업 원칙' 문서이며,
 수정은 원본에서 한 뒤 이 파일에 다시 붙여넣습니다.
