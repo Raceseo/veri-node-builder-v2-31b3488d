@@ -82,45 +82,6 @@
   Claude Code가 DB에 직접 실행하지 않음.
 - **MCP 도구**: 구 프로젝트 `erkmtsgrbsjdudiofuxw`(INACTIVE)에만 접근 가능 — 앱과 무관하므로 사용하지 않음.
 
-### 원칙
-1. `.env`는 gitignore됨. 로컬 `.env`는 `.env.example` 복사로 세팅. Lovable이 repo에 무엇을 넣든 로컬 개발 영향 없음.
-
-## 로컬 개발 워크플로우
-
-### 최초 세팅 (clone 후 한 번)
-```bash
-cp .env.example .env
-bun install       # 또는 npm install
-bun run dev       # 또는 npm run dev
-```
-
-### Lovable로 DB 만진 뒤 (수동 sync)
-```bash
-scripts\sync-db.bat        # Windows
-./scripts/sync-db.sh       # macOS/Linux
-```
-
-자세한 내용: `docs/lovable-supabase-sync.md`의 패턴 A
-
-## 관련 문서
-
-- `docs/lovable-supabase-sync.md` — 3자 drift 역사·치트시트·패턴 A~D
-- `docs/demand-validation/` — 수요 검증 설문·배포 가이드
-- `scripts/README.md` — sync-db 유틸리티 사용법
-
-## 세션 이력 (2026-04-22 이후 주요 PR)
-
-| PR | 역할 |
-|---|---|
-| #1 | UX 3건 수정 (NotFound 한국어화·저작권·Router v7) |
-| #2 | 온보딩 blocker DB fix (erkmt에 적용) |
-| #3 | `.env` project ref 정정 (→ erkmt) |
-| #4 | 수요 검증 설문·공유 스크립트 |
-| #5 | Lovable-repo 마이그레이션 1차 sync 복원 |
-| #6 | Lovable 연동 점검 결과·수동 치트시트 |
-| #7 | sync-db 유틸리티 |
-| (이 PR) | `.env` gitignore 분리 + 이 문서 |
-
 ## 수요 검증 Go 판정 후 재개할 과제
 
 - `has_role(uuid, text)` 함수 erkmt에 정의
@@ -179,9 +140,6 @@ line-item 제거 지시를 받으면 "제거 후 껍데기가 되는 카드"도 
 - 3점 일치 전 커밋 금지
 - 한 번에 한 작업만 커밋. 무관 파일 절대 미포함
 - 커밋과 푸시를 함께 처리 (푸시 누락으로 다음 날 혼선 발생한 적 있음)
-- 커밋 대상 아님: .claude/, .env.bak_seoulfix, supabase/.temp/,
-  supabase/functions/verify-portone-identity/, package-lock.json,
-  supabase/config.toml
 
 ### 절대 손대지 말 것
 - 관리자 2인 승인 (2-Admin Approval System) — 보안규칙 #6 보호 대상
