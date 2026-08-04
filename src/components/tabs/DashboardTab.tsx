@@ -45,10 +45,12 @@ const DashboardTab = () => {
       {/* Digital Badge Card */}
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-foreground mb-3">나의 인증 배지</h3>
-        <DigitalBadgeCard 
+        {/* B-34: percentile prop 삭제에 따른 최소 수정.
+            이 파일은 dead(import 0건)라 B-24에서 삭제 예정 — 빌드 유지 목적의 변경만 한다.
+            기존 percentile={5} 역시 근거 없는 하드코딩이었다. */}
+        <DigitalBadgeCard
           userName={userName}
           tier={tier}
-          percentile={5}
         />
       </div>
 

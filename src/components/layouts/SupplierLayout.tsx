@@ -228,6 +228,7 @@ const SupplierLayout = ({ onSwitchToDemand }: SupplierLayoutProps) => {
             vnBalance={vnBalance}
             trustScore={trustScore}
             displayName={displayName}
+            isVerified={isVerified}
           />
         );
       case "settings":

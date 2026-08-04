@@ -9,7 +9,8 @@ type TierType = "Bronze" | "Silver" | "Gold" | "Diamond" | "Platinum";
 interface DigitalBadgeCardProps {
   userName: string;
   tier: TierType;
-  percentile?: number;
+  /** B-34: "VeriNode Certified" 는 실제 인증 여부일 때만 표시한다. 기본값 false. */
+  isVerified?: boolean;
   verifiedDate?: string;
 }
 
@@ -19,43 +20,38 @@ const tierConfig = {
     hologram: "from-amber-400/20 via-orange-300/30 to-amber-500/20",
     accent: "#CD7F32",
     textColor: "text-amber-100",
-    percentile: "Top 50%",
   },
   Silver: {
     gradient: "from-slate-400 via-gray-300 to-slate-500",
     hologram: "from-white/30 via-slate-200/40 to-white/20",
     accent: "#C0C0C0",
     textColor: "text-slate-800",
-    percentile: "Top 30%",
   },
   Gold: {
     gradient: "from-yellow-500 via-amber-400 to-yellow-600",
     hologram: "from-yellow-200/40 via-amber-100/50 to-yellow-300/30",
     accent: "#FFD700",
     textColor: "text-yellow-900",
-    percentile: "Top 15%",
   },
   Diamond: {
     gradient: "from-cyan-400 via-blue-300 to-indigo-400",
     hologram: "from-cyan-200/50 via-blue-100/60 to-purple-200/40",
     accent: "#B9F2FF",
     textColor: "text-blue-900",
-    percentile: "Top 5%",
   },
   Platinum: {
     gradient: "from-slate-300 via-white to-slate-400",
     hologram: "from-purple-200/30 via-pink-100/40 to-cyan-200/30",
     accent: "#E5E4E2",
     textColor: "text-slate-800",
-    percentile: "Top 1%",
   },
 };
 
 const DigitalBadgeCard = ({ 
-  userName, 
-  tier, 
-  percentile,
-  verifiedDate = new Date().toISOString().split('T')[0] 
+  userName,
+  tier,
+  isVerified = false,
+  verifiedDate = new Date().toISOString().split('T')[0]
 }: DigitalBadgeCardProps) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -63,8 +59,9 @@ const DigitalBadgeCard = ({
   const [isHologramActive, setIsHologramActive] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   
+  // B-34: "Top N%" 는 tierConfig 에 박힌 고정 문자열이었고 실제 분포를 계산하지
+  //   않았다(신규 가입자에게도 "Top 50%"). 근거를 만들 수 없으므로 표시 자체를 없앤다.
   const config = tierConfig[tier];
-  const displayPercentile = percentile ? `Top ${percentile}%` : config.percentile;
 
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current || isFlipped) return;
@@ -108,7 +105,7 @@ const DigitalBadgeCard = ({
   };
 
   const handleShare = (platform: string) => {
-    const shareText = `🏆 VeriNode ${tier} TIER 인증 배지를 획득했습니다! ${displayPercentile}의 신뢰도를 인정받았어요. #VeriNode #DataTrust`;
+    const shareText = `🏆 VeriNode ${tier} TIER 배지를 획득했습니다! #VeriNode #DataTrust`;
     const shareUrl = window.location.href;
     
     let url = "";
@@ -247,18 +244,20 @@ const DigitalBadgeCard = ({
             {/* Top Section */}
             <div className="flex items-start justify-between">
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <Award className={`w-5 h-5 ${config.textColor}`} />
-                  <span className={`text-xs font-medium uppercase tracking-widest ${config.textColor} opacity-80`}>
-                    VeriNode Certified
-                  </span>
-                </div>
+                {/* B-34: is_verified 와 무관하게 항상 떠 있어, 인증하지 않은 사용자에게도
+                    "인증됨"이라고 말했다. 실제 인증한 경우에만 표시한다.
+                    미인증이면 대체 문구를 넣지 않는다 — 없는 것은 없는 대로 둔다. */}
+                {isVerified && (
+                  <div className="flex items-center gap-2 mb-1">
+                    <Award className={`w-5 h-5 ${config.textColor}`} />
+                    <span className={`text-xs font-medium uppercase tracking-widest ${config.textColor} opacity-80`}>
+                      VeriNode Certified
+                    </span>
+                  </div>
+                )}
                 <h2 className={`text-2xl font-bold tracking-tight ${config.textColor}`}>
                   {tier.toUpperCase()} TIER
                 </h2>
-                <p className={`text-sm ${config.textColor} opacity-80`}>
-                  {displayPercentile}
-                </p>
               </div>
               
               {/* Holographic emblem */}
@@ -281,18 +280,9 @@ const DigitalBadgeCard = ({
               <p className={`text-lg font-semibold ${config.textColor} mb-1`}>
                 {userName}
               </p>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div 
-                    className="w-5 h-5 rounded-full flex items-center justify-center"
-                    style={{ background: `${config.accent}60` }}
-                  >
-                    <Check className={`w-3 h-3 ${config.textColor}`} />
-                  </div>
-                  <span className={`text-xs font-medium ${config.textColor} opacity-80`}>
-                    VVIP Access Granted
-                  </span>
-                </div>
+              {/* B-34: "VVIP Access Granted" 삭제 — Bronze 에게도 표시됐고,
+                  부여되는 권한이 코드상 존재하지 않는다. */}
+              <div className="flex items-center justify-end">
                 <span className={`text-xs ${config.textColor} opacity-60`}>
                   {verifiedDate}
                 </span>

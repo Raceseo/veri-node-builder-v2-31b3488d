@@ -21,6 +21,8 @@ interface SupplierWalletTabProps {
   vnBalance: number;
   trustScore: number;
   displayName: string;
+  /** B-34: 배지의 "VeriNode Certified" 표시 여부. 실제 인증 상태만 반영한다. */
+  isVerified?: boolean;
 }
 
 const recentTransactions = [
@@ -43,6 +45,7 @@ const SupplierWalletTab = ({
   vnBalance,
   trustScore,
   displayName,
+  isVerified = false,
 }: SupplierWalletTabProps) => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("balance");
@@ -88,9 +91,10 @@ const SupplierWalletTab = ({
   return (
     <div className="p-4 space-y-4">
       {/* Digital Badge */}
-      <DigitalBadgeCard 
+      <DigitalBadgeCard
         userName={displayName}
         tier={tier}
+        isVerified={isVerified}
       />
 
       {/* Balance Overview */}

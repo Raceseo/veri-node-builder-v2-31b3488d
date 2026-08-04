@@ -65,7 +65,7 @@ const UnifiedWalletView = ({
   estimatedMonthlyPension,
 }: UnifiedWalletViewProps) => {
   const { user } = useAuth();
-  const { vnBalance, lockedBalance, trustScore, displayName, isLoading: profileLoading } = useProfileContext();
+  const { vnBalance, lockedBalance, trustScore, displayName, isVerified, isLoading: profileLoading } = useProfileContext();
   const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState("balance");
@@ -476,9 +476,10 @@ const UnifiedWalletView = ({
   return (
     <div className="p-4 space-y-4">
       {/* Digital Badge */}
-      <DigitalBadgeCard 
+      <DigitalBadgeCard
         userName={displayName}
         tier={tier}
+        isVerified={isVerified}
       />
 
       {/* Balance Overview */}
