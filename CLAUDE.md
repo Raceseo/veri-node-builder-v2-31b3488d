@@ -52,27 +52,21 @@
 - **1단계 MVP**: 정부24 동의 기반 설문 마켓플레이스
 - **창업 철학**: "누구도 공짜로 데이터를 가져가지 못한다. 공급하지 않으면 대가도 없다"
 
-## ⚠️ 가장 중요한 사실: Supabase 연결 분리 상태
-
-```
-┌─────────────────────────────────┬──────────────────────────────────┐
-│ 앱이 실제 쓰는 prod Supabase    │ 구(舊) prod (비활성)             │
-├─────────────────────────────────┼──────────────────────────────────┤
-│ okeeihfmagfogvuxzszb            │ erkmtsgrbsjdudiofuxw             │
-│ 서울 ap-northeast-2             │ ap-south-1 / INACTIVE            │
-│ .env·배포본이 이걸 가리킴       │ 과거 MCP 관리 대상, 현재 미사용  │
-│ ⚠️ MCP 접근 불가 → SQL Editor 직접│ MCP 접근 가능하나 앱과 무관       │
-└─────────────────────────────────┴──────────────────────────────────┘
-```
-
-**현재 앱(dev·배포본)은 서울 프로젝트 `okeeihfmagfogvuxzszb`를 사용합니다.** 이 프로젝트는 Claude Code의 MCP로 접근되지 않으므로, DB 변경은 **마이그레이션 SQL 파일을 작성 → Ray가 Supabase SQL Editor에서 직접 실행**하는 방식으로 진행합니다. (구 prod `erkmtsgrbsjdudiofuxw`는 INACTIVE 상태로 더 이상 사용하지 않습니다. Lovable 런타임 관련 과거 이력은 `docs/lovable-supabase-sync.md` 참조)
+## Supabase 구성
+- 조직이 2개다. 프로젝트 이름이 양쪽 다 "Verinode"라 지역으로만 구분된다.
+  - VeriNode Org / ap-northeast-2(서울) / 가동 → **앱이 실제로 쓰는 실물 DB**
+  - Raceseo's Org / ap-south-1(뭄바이) / 일시정지 → 구 erkmt, 사용하지 않음
+- Raceseo's Org에는 RegioMariae-report-weekly(별개 앱)도 있다. 건드리지 말 것.
+- 클박사(대화창 Claude)의 MCP는 Raceseo's Org에만 연결돼 있어 실물 DB를 조회할 수 없다.
+  조회 결과에 없다고 해서 존재하지 않는 것이 아니다.
+- "Verinode 프로젝트"라는 말이 나오면 어느 지역인지 먼저 확인할 것.
 
 ## AI Assistant별 사용 규칙
 
 ### ✅ Lovable AI (lovable.dev 채팅)
 - **OK**: 프런트엔드 코드 수정 (컴포넌트·라우팅·스타일·UI)
 - **OK**: 간단한 리팩터, 레이아웃 변경
-- **피할 것**: DB 스키마 변경 요청 — bhuwi에 가므로 Ray prod에 무영향
+- **피할 것**: DB 스키마 변경 요청 — 서울 실물 DB 변경은 마이그레이션 파일 + SQL Editor 경로로만 한다
 - **피할 것**: `.env` 편집 요청 — Lovable이 자동 관리로 거부
 
 ### ✅ Claude Code (이 assistant)
