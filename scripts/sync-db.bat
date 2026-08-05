@@ -55,7 +55,7 @@ echo 자주 발생하는 에러:
 echo  - "Remote migration versions not found..."
 echo      = drift 상태. docs/lovable-supabase-sync.md 패턴 D 참조
 echo  - "Cannot find project ref"
-echo      = 먼저 링크: npx supabase link --project-ref erkmtsgrbsjdudiofuxw
+echo      = 먼저 링크: npx supabase link --project-ref okeeihfmagfogvuxzszb
 echo.
 
 :end

@@ -42,7 +42,7 @@ git push
 
 ```bash
 cd D:\app_develop\verinode
-npx supabase link --project-ref erkmtsgrbsjdudiofuxw
+npx supabase link --project-ref okeeihfmagfogvuxzszb
 ```
 
 (중간에 Database password 물어보면 Supabase Dashboard → Settings → Database에서 확인)
