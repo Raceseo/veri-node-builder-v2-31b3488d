@@ -25,7 +25,6 @@ dist-ssr
 .gstack/
 !.gstack/no-test-bootstrap
 
-# .env는 Lovable이 bhuwi로 덮어쓰는 것을 막기 위해 git에서 제외
 # (docs/lovable-supabase-sync.md, CLAUDE.md 참조)
 # 신규 세팅 시: cp .env.example .env
 .env
