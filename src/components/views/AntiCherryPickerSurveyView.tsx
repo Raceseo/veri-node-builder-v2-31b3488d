@@ -1079,10 +1079,14 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
             onClick={onComplete}
             className="w-full h-14 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-semibold"
           >
-            {/* C-3: DB 설문 모드는 결과별 라벨(금액은 위 안내문에만). 인증 모드(범위 밖)는 기존 라벨 유지. */}
+            {/* C-3: DB 설문 모드는 결과별 라벨(금액은 위 안내문에만). */}
+            {/* B-29 1단계: 인증 모드 보상은 Ray 확정 2항에 따라 100 VN 고정이다.
+                grant_verification_reward RPC 에 isFullyLinked 분기가 없으므로
+                (isFullyLinked ? 500 : 100) 라벨은 서버 실제 지급액과 어긋났다.
+                라벨은 서버가 주는 값과 일치해야 한다. */}
             {isDbSurveyMode
               ? (claimOutcome === "failed" ? "닫기" : "완료")
-              : `완료하고 보상 받기 (+${(isFullyLinked ? 500 : 100).toLocaleString()} VN)`}
+              : `완료하고 보상 받기 (+${(100).toLocaleString()} VN)`}
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
         </div>
