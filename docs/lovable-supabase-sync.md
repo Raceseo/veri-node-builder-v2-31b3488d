@@ -64,7 +64,10 @@ Lovable이 UI에서 만들고 DB에는 적용했지만 repo에 commit 안 한 �
 
 ### ✅ Supabase 연동: 정상 (단, 자동화 토글 없음)
 - **경로**: 에디터 → 점 세 개(⋯) 메뉴 → **Cloud** → Supabase 패널
-- 상태: `Enabled` / `Raceseo's Org` 소속 `okeeihfmagfogvuxzszb (Verinode)` 프로젝트 연결됨
+- 상태: `Enabled` / `Raceseo's Org` 소속 `erkmtsgrbsjdudiofuxw (Verinode)` 프로젝트 연결됨
+
+> 📌 2026-08-05 기준 실물은 VeriNode Org의 okeeihfmagfogvuxzszb(서울)다. 위는 이전 전 기록.
+
 - **"Linked Supabase organizations"** 모달에서 확인:
   - Raceseo's Org → 버튼 없음 = 정상 연결
   - INTYCO HOMPAGE DB → "Reconnect" 버튼 있지만 이 조직은 옛 홈페이지 프로젝트 (이미 다른 Supabase로 이전 완료) → verinode와 무관, 방치해도 무방
