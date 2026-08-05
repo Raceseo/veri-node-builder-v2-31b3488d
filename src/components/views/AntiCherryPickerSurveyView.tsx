@@ -314,45 +314,32 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
     }
   }, [currentStep, linkedData, isDbSurveyMode, surveyId]);
 
-  /** B-30: 성공 여부를 반환한다. 호출부는 true 일 때만 완료 화면으로 넘어간다. */
+  /**
+   * B-29 1단계: 인증 확정·기록·보상을 Edge Function(claim-verification-reward)으로 이관.
+   *
+   *  · 이전에는 프론트가 profiles 를 직접 UPDATE 하고 verification_history 에 INSERT 했다.
+   *    그 INSERT 는 서울 실물 정책이 service_role 전용이라 **넉 달간 한 번도 성공하지 못했다**
+   *    (테이블 전체 0행). VN 보상도 보안 규칙 #4 때문에 미지급 상태였다.
+   *  · 이제 is_verified·trust_score·verification_history·vn_balance·transactions 를
+   *    grant_verification_reward RPC 가 **한 트랜잭션**으로 처리한다. 하나라도 실패하면
+   *    전체 롤백되므로 "점수만 오르고 기록은 없는" 상태가 구조적으로 생기지 않는다.
+   *  · 중복 지급은 서버가 막는다(is_verified 확인 + UNIQUE(user_id)). 프론트는 판단하지 않는다.
+   *
+   * B-30 (가) 차단: 성공(true)일 때만 호출부가 완료 화면으로 넘어간다.
+   *   실패했는데 "인증 완료"라고 말하면 사용자는 점수가 오른 줄 알고 떠난다.
+   *   이전 (나) 알림("인증은 완료됐지만 기록을 저장하지 못했습니다")은 여기서 사라진다 —
+   *   기록이 실패하면 인증 자체가 롤백되므로 그런 중간 상태가 없다.
+   *
+   * B-33: use-toast 의 TOAST_LIMIT = 1 이라 같은 틱에 toast() 를 두 번 부르면 먼저 것이
+   *   그려지기도 전에 잘린다. → 분기당 정확히 토스트 1개.
+   */
   const updateProfileVerification = async (): Promise<boolean> => {
     setIsUpdatingProfile(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return false;
-      const { data: currentProfile, error: profileFetchError } = await supabase
-        .from('profiles').select('trust_score, is_verified').eq('id', user.id).single();
-      if (profileFetchError) {
-        // B-30: 기존에는 조용히 return 해 사용자가 스캔 화면에 갇혔다.
-        console.error("profiles fetch failed:", profileFetchError);
-        toast({
-          title: "인증을 완료하지 못했습니다",
-          description: "다시 시도해 주세요. 점수는 아직 반영되지 않았습니다.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      if (currentProfile?.is_verified) { setCurrentStep("complete"); return true; }
-      // B-26: `|| 65` → `?? 0`.
-      //   65 는 옛 DB 기본값(profiles.trust_score DEFAULT 65)을 반영한 값이었으나,
-      //   현재 handle_new_user 트리거가 trust_score 에 0 을 명시적으로 넣는다
-      //   (20260422221437_catch_up_schema_for_app_parity.sql:51-56).
-      //   0 은 falsy 라 `||` 폴백이 신규 사용자 전원에게 발동해, 설계 의도인
-      //   +5/+15 대신 0 → 70/80 으로 뛰었다. 0 은 유효한 값이므로 폴백 대상이 아니다.
-      const currentTrustScore = currentProfile?.trust_score ?? 0;
-      const newTrustScore = Math.min(currentTrustScore + (isFullyLinked ? 15 : 5), 100);
-      // ⚠️ 구간④-후속(TODO): 인증 모드 VN 보상은 아직 Edge Function 이관 전이라 지급 보류.
-      //    보안 규칙 #4 + protect_vn_balance 트리거로 프론트의 vn_balance 직접 수정은 금지/차단됨.
-      //    여기서는 인증(is_verified)·신뢰도(trust_score)만 갱신하고, 보상 지급은 후속 세션에서
-      //    claim-verification-reward(가칭) Edge Function 으로 이관 예정. (claim-survey-reward 참고)
-      // B-30 (가) 차단: 인증의 본체다. 실패했는데 "인증 완료"라고 말하면
-      //   사용자는 점수가 오른 줄 알고 떠난다. 실패 시 완료 화면으로 넘기지 않는다.
-      const { error: profileUpdateError } = await supabase.from('profiles').update({
-        is_verified: true,
-        trust_score: newTrustScore, updated_at: new Date().toISOString()
-      }).eq('id', user.id);
-      if (profileUpdateError) {
-        console.error("profiles update failed:", profileUpdateError);
+      const { data, error } = await supabase.functions.invoke("claim-verification-reward");
+
+      if (error) {
+        console.error("claim-verification-reward 호출 실패:", error);
         toast({
           title: "인증을 완료하지 못했습니다",
           description: "다시 시도해 주세요. 점수는 아직 반영되지 않았습니다.",
@@ -361,33 +348,35 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
         return false;
       }
 
-      // B-30 (나) 알림: 이 INSERT 는 현재 RLS 상 반드시 실패한다(B-29).
-      //   정책 "시스템만 삽입가능"이 service_role 만 허용하는데 여기서는 authenticated 로 실행된다.
-      //   (가) 차단을 걸면 인증 완주 자체가 막히므로, 이관 전까지는 알림만 띄우고 진행시킨다.
-      //   ⚠️ B-29 이관 시 (가) 차단으로 승격
-      const { error: historyInsertError } = await supabase.from('verification_history').insert({
-        user_id: user.id, verification_type: 'identity_verification',
-        trust_score_before: currentTrustScore, trust_score_after: newTrustScore,
-        score_change: isFullyLinked ? 15 : 5, vn_earned: 0, // 보상 이관 전까지 0 (reward_pending)
-        result: { type: 'first_verification', passed: true, mydata_linked: isFullyLinked, reward_pending: true, timestamp: new Date().toISOString() }
+      // 잔액·기록·거래 UI 갱신 (성공/이미완료 공통)
+      const refresh = () => {
+        queryClient.invalidateQueries({ queryKey: ["profile"] });
+        queryClient.invalidateQueries({ queryKey: ["home-profile"] });
+        queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      };
+
+      // 이미 인증됐거나 이미 적립된 계정 — 실패가 아니므로 완료 화면으로 진행한다.
+      if (data?.already_claimed) {
+        refresh();
+        toast({ title: "이미 인증이 완료된 계정입니다" });
+        return true;
+      }
+
+      if (!data?.success) {
+        console.error("claim-verification-reward 응답 이상:", data);
+        toast({
+          title: "인증을 완료하지 못했습니다",
+          description: "다시 시도해 주세요. 점수는 아직 반영되지 않았습니다.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      refresh();
+      toast({
+        title: `🎉 인증 완료 · +${(data.reward_vn ?? 0).toLocaleString()} VN 적립`,
+        description: `신뢰도 +${data.score_change ?? 0}점 · 현재 잔액 ${(data.new_balance ?? 0).toLocaleString()} VN`,
       });
-      queryClient.invalidateQueries({ queryKey: ['profile', user.id] });
-      queryClient.invalidateQueries({ queryKey: ['home-profile'] });
-
-      // B-33: use-toast 의 TOAST_LIMIT = 1 이라, 같은 틱에 toast() 를 두 번 부르면
-      //   먼저 것은 화면에 그려진 적도 없이 slice 에 잘린다(v113 실측에서 실증 —
-      //   빨간 실패 알림이 초록 성공 알림에 덮여 "조용한 실패의 알림"이 조용히 실패했다).
-      //   → 한 완료 시점에 토스트는 반드시 1개. 실패 시 성공 토스트를 띄우지 않는다.
-      if (historyInsertError) {
-        console.error("verification_history insert failed:", historyInsertError);
-        toast({
-          title: "인증은 완료됐지만 기록을 저장하지 못했습니다",
-          description: "내역 화면에 표시되지 않을 수 있습니다.",
-          variant: "destructive",
-        });
-      } else {
-        toast({ title: "✅ 인증 완료!", description: `신뢰도 +${isFullyLinked ? 15 : 5}점 상승 (보상은 준비 중)` });
-      }
       return true;
     } catch (error) {
       console.error("Verification update error:", error);
@@ -1090,10 +1079,14 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
             onClick={onComplete}
             className="w-full h-14 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-semibold"
           >
-            {/* C-3: DB 설문 모드는 결과별 라벨(금액은 위 안내문에만). 인증 모드(범위 밖)는 기존 라벨 유지. */}
+            {/* C-3: DB 설문 모드는 결과별 라벨(금액은 위 안내문에만). */}
+            {/* B-29 1단계: 인증 모드 보상은 Ray 확정 2항에 따라 100 VN 고정이다.
+                grant_verification_reward RPC 에 isFullyLinked 분기가 없으므로
+                (isFullyLinked ? 500 : 100) 라벨은 서버 실제 지급액과 어긋났다.
+                라벨은 서버가 주는 값과 일치해야 한다. */}
             {isDbSurveyMode
               ? (claimOutcome === "failed" ? "닫기" : "완료")
-              : `완료하고 보상 받기 (+${(isFullyLinked ? 500 : 100).toLocaleString()} VN)`}
+              : `완료하고 보상 받기 (+${(100).toLocaleString()} VN)`}
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
         </div>
