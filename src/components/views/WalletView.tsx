@@ -153,7 +153,6 @@ const WalletView = ({ onOpenDataAssetDashboard, estimatedMonthlyPension, onOpenD
           <DigitalBadgeCard 
             userName={userName}
             tier={tier}
-            percentile={5}
           />
         </div>
 
