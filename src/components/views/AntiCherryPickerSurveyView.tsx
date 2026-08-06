@@ -650,7 +650,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
                     </div>
                   ))}
                   <p className="text-green-400/70 text-xs mt-2 pt-2 border-t border-green-500/20">
-                    ✅ 타이핑 입력 없이 자동으로 설문이 완성됩니다. 보상 +500 VN 지급!
+                    ✅ 타이핑 입력 없이 자동으로 설문이 완성됩니다.
                   </p>
                 </div>
               ) : (
@@ -667,7 +667,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
                     </div>
                   </div>
                   <p className="text-amber-400 text-xs mt-2">
-                    ⚠️ 연동된 데이터가 없어 직접 입력이 필요합니다. 마이데이터 연동 시 자동 완성 + 보상 5배!
+                    직접 입력 방식으로 진행합니다.
                   </p>
                 </div>
               )}
@@ -700,7 +700,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
             {isLoadingLinkedData ? (
               <><Loader2 className="w-5 h-5 mr-2 animate-spin" />데이터 확인 중...</>
             ) : isFullyLinked ? (
-              <><Zap className="w-5 h-5 mr-2" />서약하고 자동 완성 시작하기 (+500 VN)</>
+              <><Zap className="w-5 h-5 mr-2" />서약하고 자동 완성 시작하기 (+100 VN)</>
             ) : (
               <>서약하고 설문 시작하기<ArrowRight className="w-5 h-5 ml-2" /></>
             )}
@@ -1063,7 +1063,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
             </div>
           )}
           {isFullyLinked && (
-            <p className="text-green-400 text-sm font-semibold mb-6">🎉 마이데이터 연동으로 +500 VN 지급!</p>
+            <p className="text-green-400 text-sm font-semibold mb-6">🎉 마이데이터 연동으로 자동 완성되었습니다</p>
           )}
           {/* 구간F-1(C-1): 판정 로직 없는 고정 연출(신뢰도 +점 / 응답 일관성 92% / 복사 탐지 미탐지) 제거.
               '데이터 방식(직접 입력)'만 사실이므로 단독 유지. */}

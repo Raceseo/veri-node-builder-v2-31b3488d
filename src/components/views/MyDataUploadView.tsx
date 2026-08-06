@@ -135,10 +135,11 @@ export const MyDataUploadView = ({ onBack }: MyDataUploadViewProps) => {
                   <TrendingUp className="w-5 h-5 text-black" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-white text-sm mb-1">마이데이터 특별 보상</h4>
+                  <h4 className="font-bold text-white text-sm mb-1">마이데이터 제출</h4>
                   <p className="text-xs text-blue-100 leading-relaxed">
-                    마이데이터로 제출 시 <span className="font-bold text-yellow-300">데이터 신뢰 점수가 2배 상승</span>하며,{' '}
-                    <span className="font-bold text-yellow-300">더 높은 보상</span>을 받을 수 있습니다.
+                    {/* B-44: "신뢰 점수 2배 상승"·"더 높은 보상" 삭제 — 구간 I(온보딩 정직화)에서
+                        근거 없음으로 판정한 문구의 잔여분이다. 서버에 배수 로직이 없다. */}
+                    마이데이터로 제출하면 직접 입력할 항목을 줄일 수 있습니다.
                   </p>
                 </div>
               </div>

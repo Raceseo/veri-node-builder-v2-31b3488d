@@ -121,7 +121,6 @@ const SupplierLayout = ({ onSwitchToDemand }: SupplierLayoutProps) => {
                 ← 돌아가기
               </button>
               <DataLinkPromptStep
-                baseReward={500}
                 onConnectAll={handleProceedToSurvey}
                 onSkip={handleProceedToSurvey}
               />

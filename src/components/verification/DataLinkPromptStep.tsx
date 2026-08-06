@@ -1,27 +1,28 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shield, Zap, ChevronRight, AlertTriangle, CheckCircle2, Link2, Building2, Landmark, CreditCard } from "lucide-react";
+import { CheckCircle2, Link2, Building2, Landmark, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+// B-44: 배수 보상 약속(비교 카드·N배 배지·실시간 예상 보상·버튼 금액·소스별 보너스)을
+//   통째로 제거했다. 서버는 grant_verification_reward 로 100 VN 을 고정 지급하며
+//   isFullyLinked 분기가 없다(Ray 확정 2항). 화면이 최대 5,000 VN 을 약속하고 있었다.
+//   연동 화면 자체의 존폐는 B-28 소관이므로, 여기서는 지킬 수 없는 약속만 걷어낸다.
 interface DataSource {
   id: string;
   icon: React.ReactNode;
   name: string;
   description: string;
-  bonusVN: number;
   dataPoints: string[];
   color: string;
   connected: boolean;
 }
 
 interface DataLinkPromptStepProps {
-  baseReward?: number;
   onConnectAll: () => void;   // 연동 완료 → 자동 설문 완성
   onSkip: () => void;         // 나중에 → 기본 설문 5문항
 }
 
 const DataLinkPromptStep = ({
-  baseReward = 500,
   onConnectAll,
   onSkip,
 }: DataLinkPromptStepProps) => {
@@ -34,7 +35,6 @@ const DataLinkPromptStep = ({
       icon: <CreditCard className="w-5 h-5" />,
       name: "금융 마이데이터",
       description: "은행·카드·증권 거래 내역",
-      bonusVN: 2000,
       dataPoints: ["소비 패턴", "금융 행동", "자산 현황"],
       color: "#3182F6",
       connected: false,
@@ -44,7 +44,6 @@ const DataLinkPromptStep = ({
       icon: <Landmark className="w-5 h-5" />,
       name: "정부24 데이터",
       description: "주민등록·건강보험·세금 정보",
-      bonusVN: 1500,
       dataPoints: ["인구 통계", "소득 수준", "건강 정보"],
       color: "#22C55E",
       connected: false,
@@ -54,18 +53,12 @@ const DataLinkPromptStep = ({
       icon: <Building2 className="w-5 h-5" />,
       name: "통신 마이데이터",
       description: "통신사 이용 패턴·요금 정보",
-      bonusVN: 1000,
       dataPoints: ["생활 패턴", "위치 정보", "앱 사용"],
       color: "#F5A623",
       connected: false,
     },
   ];
 
-  const totalBonusVN = dataSources
-    .filter(s => connected.includes(s.id))
-    .reduce((sum, s) => sum + s.bonusVN, 0);
-
-  const totalReward = baseReward + totalBonusVN;
   const allConnected = dataSources.every(s => connected.includes(s.id));
 
   const handleConnect = async (sourceId: string) => {
@@ -78,7 +71,6 @@ const DataLinkPromptStep = ({
   };
 
   const connectedCount = connected.length;
-  const rewardMultiplier = connectedCount === 0 ? 1 : connectedCount === 1 ? 2 : connectedCount === 2 ? 3 : 5;
 
   return (
     <div className="max-w-xl mx-auto space-y-4">
@@ -94,73 +86,12 @@ const DataLinkPromptStep = ({
           🔗
         </div>
         <h2 className="text-white text-lg font-extrabold tracking-tight">
-          데이터를 연동하면 더 빠르고 더 많이 받아요
+          데이터를 연동하면 입력이 줄어요
         </h2>
         <p className="text-slate-400 text-sm leading-relaxed">
           직접 타이핑 대신 내 데이터를 연동하면<br />
-          <span className="text-white font-semibold">설문이 자동 완성</span>되고 보상도 최대 <span className="text-yellow-400 font-bold">5배</span> 증가해요
+          <span className="text-white font-semibold">설문이 자동 완성</span>됩니다
         </p>
-      </motion.div>
-
-      {/* ── 보상 비교 카드 ────────────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.1 }}
-        className="grid grid-cols-2 gap-3"
-      >
-        {/* 연동 안 함 */}
-        <div className="rounded-xl border border-[#1e2d45] bg-[#0d1626] p-4 space-y-1.5 opacity-60">
-          <div className="flex items-center gap-1.5">
-            <AlertTriangle className="w-3.5 h-3.5 text-slate-500" />
-            <span className="text-slate-400 text-xs font-semibold">연동 안 함</span>
-          </div>
-          <p className="text-slate-300 text-xl font-black">+{baseReward.toLocaleString()} VN</p>
-          <p className="text-slate-500 text-xs">5문항 직접 타이핑</p>
-          <p className="text-slate-600 text-[10px]">데이터 등급 0점 유지</p>
-        </div>
-        {/* 전체 연동 */}
-        <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/5 p-4 space-y-1.5 relative overflow-hidden">
-          <div className="absolute top-0 right-0 bg-yellow-500 text-black text-[9px] font-black px-2 py-0.5 rounded-bl-lg">
-            추천
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Zap className="w-3.5 h-3.5 text-yellow-400" />
-            <span className="text-yellow-400 text-xs font-semibold">전체 연동</span>
-          </div>
-          <p className="text-yellow-400 text-xl font-black">
-            +{(baseReward + dataSources.reduce((s, d) => s + d.bonusVN, 0)).toLocaleString()} VN
-          </p>
-          <p className="text-yellow-400/70 text-xs">자동 완성 · 즉시 완료</p>
-          <p className="text-yellow-400/50 text-[10px]">데이터 등급 즉시 상승 ↑</p>
-        </div>
-      </motion.div>
-
-      {/* ── 현재 예상 보상 실시간 표시 ───────────────────────────── */}
-      <motion.div
-        className="rounded-xl border border-[#1e2d45] bg-[#111827] px-4 py-3 flex items-center justify-between"
-        animate={{ borderColor: totalBonusVN > 0 ? "rgba(245,166,35,0.4)" : "#1e2d45" }}
-        transition={{ duration: 0.3 }}
-      >
-        <div className="flex items-center gap-2">
-          <Shield className="w-4 h-4 text-[#3182F6]" />
-          <span className="text-slate-400 text-sm">현재 예상 보상</span>
-        </div>
-        <div className="flex items-center gap-2">
-          {connectedCount > 0 && (
-            <span className="text-xs bg-yellow-500/15 text-yellow-400 px-2 py-0.5 rounded-full font-semibold">
-              {rewardMultiplier}배 보상
-            </span>
-          )}
-          <motion.span
-            key={totalReward}
-            initial={{ scale: 1.2, color: "#F5A623" }}
-            animate={{ scale: 1, color: totalBonusVN > 0 ? "#F5A623" : "#94a3b8" }}
-            className="text-lg font-extrabold"
-          >
-            +{totalReward.toLocaleString()} VN
-          </motion.span>
-        </div>
       </motion.div>
 
       {/* ── 데이터 소스 목록 ──────────────────────────────────────── */}
@@ -215,11 +146,8 @@ const DataLinkPromptStep = ({
                   </div>
                 </div>
 
-                {/* 보상 + 버튼 */}
+                {/* 연동 버튼 */}
                 <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                  <span className="text-yellow-400 text-sm font-black">
-                    +{source.bonusVN.toLocaleString()}
-                  </span>
                   <button
                     onClick={() => handleConnect(source.id)}
                     disabled={isConnected || !!connecting}
@@ -277,7 +205,7 @@ const DataLinkPromptStep = ({
                   boxShadow: "0 8px 24px rgba(34,197,94,0.35)",
                 }}
               >
-                🎉 연동 완료! 자동 설문 완성하기 (+{totalReward.toLocaleString()} VN)
+                🎉 연동 완료! 자동 설문 완성하기
               </Button>
             </motion.div>
           )}
@@ -293,7 +221,7 @@ const DataLinkPromptStep = ({
               boxShadow: "0 8px 24px rgba(49,130,246,0.3)",
             }}
           >
-            연동된 데이터로 설문 시작하기 (+{totalReward.toLocaleString()} VN) →
+            연동된 데이터로 설문 시작하기 →
           </Button>
         )}
 
@@ -303,16 +231,11 @@ const DataLinkPromptStep = ({
           className="w-full py-3.5 rounded-xl border border-[#1e2d45] text-slate-500 text-sm font-medium hover:text-slate-300 hover:border-slate-600 transition-all duration-200"
         >
           나중에 연동할게요 &nbsp;·&nbsp;
-          <span className="text-slate-600">기본 설문만 참여 (+{baseReward.toLocaleString()} VN)</span>
+          <span className="text-slate-600">직접 입력으로 참여</span>
         </button>
 
-        {/* 손실 프레이밍 */}
-        {connectedCount === 0 && (
-          <p className="text-center text-xs text-slate-600 leading-relaxed">
-            ⚠️ 연동하지 않으면 데이터 등급이 <span className="text-red-400 font-semibold">0점</span>으로 유지되며,
-            향후 고가치 설문 참여가 제한될 수 있습니다.
-          </p>
-        )}
+        {/* B-44: 손실 프레이밍 제거 — "데이터 등급 0점 유지"는 B-28 에서 "데이터 등급"의
+            정의가 없다고 판정했고, "향후 고가치 설문 참여 제한"은 서버에 그런 기제가 없다. */}
       </div>
     </div>
   );
