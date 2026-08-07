@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Shield, CheckCircle, FileSignature, AlertTriangle, KeyRound } from "lucide-react";
+import { Shield, CheckCircle, FileSignature, AlertTriangle, KeyRound, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "@/hooks/use-toast";
 import { recordConsent } from "@/lib/recordConsent";
 import { ONBOARDING_PLEDGE } from "@/lib/consentTexts";
@@ -85,31 +86,46 @@ const SocialPromiseView = ({ onComplete, displayName = "사용자" }: SocialProm
             return (
               <div
                 key={promise.key}
-                className={`flex items-start gap-4 p-4 rounded-xl transition-all ${
-                  agreements[promise.key] 
-                    ? "bg-primary/10 border border-primary/30" 
+                className={`flex items-start gap-2 p-4 rounded-xl transition-all ${
+                  agreements[promise.key]
+                    ? "bg-primary/10 border border-primary/30"
                     : "bg-muted/50 border border-transparent"
                 }`}
               >
-                <Checkbox
-                  id={promise.key}
-                  checked={agreements[promise.key]}
-                  onCheckedChange={(checked) =>
-                    setAgreements(prev => ({ ...prev, [promise.key]: checked === true }))
-                  }
-                  className="mt-1"
-                />
-                <div className="flex-1">
+                {/* 터치 히트영역 44px 확보(체크박스 자체는 16px) */}
+                <label
+                  htmlFor={promise.key}
+                  className="flex items-center justify-center w-11 h-11 shrink-0 -my-1.5 -ml-1.5 cursor-pointer"
+                >
+                  <Checkbox
+                    id={promise.key}
+                    checked={agreements[promise.key]}
+                    onCheckedChange={(checked) =>
+                      setAgreements(prev => ({ ...prev, [promise.key]: checked === true }))
+                    }
+                  />
+                </label>
+                <div className="flex-1 min-w-0">
+                  {/* (a) 제목은 항상 노출 */}
                   <label
                     htmlFor={promise.key}
                     className="flex items-center gap-2 text-foreground font-medium cursor-pointer"
                   >
-                    <Icon className="w-4 h-4 text-primary" />
+                    <Icon className="w-4 h-4 text-primary shrink-0" />
                     {promise.title}
                   </label>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {promise.description}
-                  </p>
+                  {/* (a) 설명 전문은 접기. 원문(consentTexts.ONBOARDING_PLEDGE)·version 무변경 */}
+                  <Collapsible>
+                    <CollapsibleTrigger className="mt-1 flex items-center gap-1 text-sm text-primary/80 hover:text-primary transition-colors [&[data-state=open]>svg]:rotate-180">
+                      더 알아보기
+                      <ChevronDown className="w-3.5 h-3.5 transition-transform" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <p className="text-base text-muted-foreground mt-1.5 leading-relaxed">
+                        {promise.description}
+                      </p>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </div>
               </div>
             );
@@ -151,7 +167,7 @@ const SocialPromiseView = ({ onComplete, displayName = "사용자" }: SocialProm
                       <span className="text-sm">동의 기록 중...</span>
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-foreground/70">
                       동의하시면 동의한 날짜와 내용이 기록됩니다
                     </p>
                   )}
@@ -181,7 +197,7 @@ const SocialPromiseView = ({ onComplete, displayName = "사용자" }: SocialProm
           )}
         </Button>
 
-        <p className="text-xs text-center text-muted-foreground mt-4">
+        <p className="text-sm text-center text-muted-foreground mt-4">
           {/* B-25: "보장하기" → 단정. 지킬 근거가 없는 표현을 걷어낸다 */}
           이 서약은 VeriNode 플랫폼의 데이터 무결성을 지키기 위한 것입니다.
           <br />

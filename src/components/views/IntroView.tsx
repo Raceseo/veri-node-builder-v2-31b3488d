@@ -66,7 +66,7 @@ const IntroView = ({ onStart }: IntroViewProps) => {
         <h2 className="text-2xl font-bold text-white mb-3">
           당신의 진실에 가치를 매기다
         </h2>
-        <p className="text-base text-white/60 leading-relaxed max-w-xs">
+        <p className="text-base text-white/75 leading-relaxed max-w-xs">
           우리는 거대 IT 기업이 독점하던
           <br />
           <span className="text-trust-light font-medium">데이터 주권</span>을 당신에게 돌려줍니다
@@ -100,13 +100,13 @@ const IntroView = ({ onStart }: IntroViewProps) => {
       </div>
 
       {/* Trust Indicators */}
-      <div className="flex items-center gap-6 mt-8 text-white/40 text-xs animate-fade-in" style={{ animationDelay: '1.5s', animationFillMode: 'both' }}>
+      <div className="flex items-center gap-6 mt-8 text-white/70 text-sm animate-fade-in" style={{ animationDelay: '1.5s', animationFillMode: 'both' }}>
         <div className="flex items-center gap-1.5">
-          <Shield className="w-3.5 h-3.5 text-trust" />
+          <Shield className="w-4 h-4 text-trust" />
           <span>보안 인증</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-trustTeal" />
+          <Sparkles className="w-4 h-4 text-trustTeal" />
           <span>개인정보 보호</span>
         </div>
       </div>

@@ -77,7 +77,7 @@ const SovereigntyDeclarationView = ({ onComplete }: SovereigntyDeclarationViewPr
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[100px]" />
 
       {/* Main headline */}
-      <div className="text-center z-10 mb-10 animate-fade-in">
+      <div className="text-center z-10 mb-6 animate-fade-in">
         <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 tracking-tight">
           이제 당신의 데이터는
         </h1>
@@ -87,11 +87,11 @@ const SovereigntyDeclarationView = ({ onComplete }: SovereigntyDeclarationViewPr
       </div>
 
       {/* Three Promises */}
-      <div className="w-full max-w-sm space-y-4 z-10">
+      <div className="w-full max-w-sm space-y-3 z-10">
         {promises.map((promise, index) => (
           <div
             key={promise.title}
-            className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5 animate-fade-in"
+            className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 animate-fade-in"
             style={{ animationDelay: `${0.3 + index * 0.15}s`, animationFillMode: 'both' }}
           >
             <div className="flex items-start gap-4">
@@ -103,7 +103,7 @@ const SovereigntyDeclarationView = ({ onComplete }: SovereigntyDeclarationViewPr
               </div>
               <div>
                 <h3 className="text-white font-semibold text-lg mb-1">{promise.title}</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">{promise.description}</p>
+                <p className="text-slate-400 text-base leading-relaxed">{promise.description}</p>
               </div>
             </div>
           </div>
@@ -111,7 +111,7 @@ const SovereigntyDeclarationView = ({ onComplete }: SovereigntyDeclarationViewPr
       </div>
 
       {/* Seal & Button Area */}
-      <div className="mt-10 z-10 flex flex-col items-center">
+      <div className="mt-6 z-10 flex flex-col items-center">
         {/* Gold Seal Animation */}
         <div className={cn(
           "relative w-24 h-24 mb-6 transition-all duration-700",
@@ -228,7 +228,7 @@ const SovereigntyDeclarationView = ({ onComplete }: SovereigntyDeclarationViewPr
       </div>
 
       {/* Bottom subtle text */}
-      <p className="absolute bottom-8 text-slate-600 text-xs text-center max-w-xs animate-fade-in" style={{ animationDelay: '1.2s', animationFillMode: 'both' }}>
+      <p className="absolute bottom-8 text-slate-400 text-sm text-center max-w-xs animate-fade-in" style={{ animationDelay: '1.2s', animationFillMode: 'both' }}>
         이 선언은 당신의 데이터 주권을 보장하는
         <br />
         VeriNode의 약속입니다
