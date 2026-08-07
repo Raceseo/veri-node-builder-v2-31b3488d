@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import {
-  Shield, TrendingUp, ChevronRight, Sparkles,
+  Shield, ChevronRight, Sparkles,
   PiggyBank, Upload
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -15,7 +15,7 @@ interface SupplierHomeTabProps {
   displayName?: string;
   isVerified?: boolean;
   onStartVerification?: () => void;
-  onOpenPortfolio?: () => void;
+  onOpenWallet?: () => void;   // VN 잔액 카드 탭 → 내 지갑 탭 (포트폴리오 진입 숨김, B-36)
 }
 
 const SupplierHomeTab = ({
@@ -24,7 +24,7 @@ const SupplierHomeTab = ({
   displayName: propDisplayName,
   isVerified: propIsVerified,
   onStartVerification,
-  onOpenPortfolio,
+  onOpenWallet,
 }: SupplierHomeTabProps) => {
   const navigate = useNavigate();
 
@@ -63,9 +63,9 @@ const SupplierHomeTab = ({
         animate={{ opacity: 1, y: 0 }}
         className="space-y-3"
       >
-        {/* VN 잔액 카드 — 홈 첫 화면 압축(1줄): 잔액 실값 유지, 카드 전체 탭 → 포트폴리오 */}
+        {/* VN 잔액 카드 — 한 줄 압축. 카드 전체 탭 → 내 지갑 탭 (B-36: 포트폴리오 진입 숨김) */}
         <Card
-          onClick={onOpenPortfolio}
+          onClick={onOpenWallet}
           className="p-3 bg-gradient-to-br from-primary/5 via-background to-primary/10 border-primary/20 cursor-pointer hover:border-primary/40 transition-colors"
         >
           <div className="flex items-center justify-between gap-2">
@@ -104,47 +104,27 @@ const SupplierHomeTab = ({
           </Button>
         </motion.div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-3">
-          {/* Verification Action */}
-          <motion.div whileTap={{ scale: 0.98 }}>
-            <Card
-              className="p-4 cursor-pointer hover:border-primary/50 transition-colors"
-              onClick={onStartVerification}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Shield className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  {/* B-25: "AI 인증" → AI 가 하는 일은 맞춤 질문 생성(verinode-ai
-                      generate_contextual_questions)이지 인증 판정이 아니다.
-                      "AI 가 인증한다"가 아니라 "AI 가 만든 질문으로 인증한다"가 실제. */}
-                  <p className="text-sm font-semibold text-foreground">데이터 인증</p>
-                  <p className="text-xs text-muted-foreground">설문으로 신뢰점수 올리기</p>
-                </div>
+        {/* Quick Action — 데이터 인증 (B-36: 포트폴리오 카드 제거로 전폭화) */}
+        <motion.div whileTap={{ scale: 0.98 }}>
+          <Card
+            className="p-4 cursor-pointer hover:border-primary/50 transition-colors"
+            onClick={onStartVerification}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Shield className="w-5 h-5 text-primary" />
               </div>
-            </Card>
-          </motion.div>
-
-          {/* Portfolio Action */}
-          <motion.div whileTap={{ scale: 0.98 }}>
-            <Card
-              className="p-4 cursor-pointer hover:border-emerald-500/50 transition-colors"
-              onClick={onOpenPortfolio}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-emerald-500" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">포트폴리오</p>
-                  <p className="text-xs text-muted-foreground">자산 분석</p>
-                </div>
+              <div className="flex-1 min-w-0">
+                {/* B-25: "AI 인증" → AI 가 하는 일은 맞춤 질문 생성(verinode-ai
+                    generate_contextual_questions)이지 인증 판정이 아니다.
+                    "AI 가 인증한다"가 아니라 "AI 가 만든 질문으로 인증한다"가 실제. */}
+                <p className="text-sm font-semibold text-foreground">데이터 인증</p>
+                <p className="text-xs text-muted-foreground">설문으로 신뢰점수 올리기</p>
               </div>
-            </Card>
-          </motion.div>
-        </div>
+              <ChevronRight className="w-5 h-5 text-slate-400 shrink-0" />
+            </div>
+          </Card>
+        </motion.div>
 
       </motion.div>
     </div>

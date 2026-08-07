@@ -209,7 +209,7 @@ const SupplierLayout = ({ onSwitchToDemand }: SupplierLayoutProps) => {
             displayName={displayName}
             isVerified={isVerified}
             onStartVerification={handleStartSurvey}   // ✅ DataLinkPromptStep 먼저
-            onOpenPortfolio={() => setCurrentView("dataPortfolio")}
+            onOpenWallet={() => setActiveTab("wallet")}  // B-36: VN 카드 → 내 지갑 탭 (포트폴리오 진입 숨김)
           />
         );
       case "earn":
