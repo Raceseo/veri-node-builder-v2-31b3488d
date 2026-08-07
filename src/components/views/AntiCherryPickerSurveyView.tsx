@@ -1065,16 +1065,8 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
           {isFullyLinked && (
             <p className="text-green-400 text-sm font-semibold mb-6">🎉 마이데이터 연동으로 자동 완성되었습니다</p>
           )}
-          {/* 구간F-1(C-1): 판정 로직 없는 고정 연출(신뢰도 +점 / 응답 일관성 92% / 복사 탐지 미탐지) 제거.
-              '데이터 방식(직접 입력)'만 사실이므로 단독 유지. */}
-          <div className="bg-slate-800/50 border border-green-500/30 rounded-2xl p-6 mb-6">
-            <div className="bg-slate-900/50 rounded-xl p-4">
-              <p className="text-slate-500 text-xs mb-1">데이터 방식</p>
-              <p className={`font-semibold ${isFullyLinked ? "text-green-400" : "text-blue-400"}`}>
-                {isFullyLinked ? "마이데이터 연동" : "직접 입력"}
-              </p>
-            </div>
-          </div>
+          {/* B-47: '데이터 방식(직접 입력)' 박스 제거 — 파란 글씨+어두운 박스라 입력칸으로 오인.
+              연동 기능이 첫 출시 제외(B-36 숨김)라 방식 구분 자체가 현재 무의미. */}
           <Button
             onClick={onComplete}
             className="w-full h-14 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-semibold"
