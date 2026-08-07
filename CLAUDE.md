@@ -121,6 +121,10 @@ line-item 제거 지시를 받으면 "제거 후 껍데기가 되는 카드"도 
 1. **GitHub에 커밋 존재** — `git log origin/main`
 2. **Lovable 수신** — 커밋 목록에 보이는가
 3. **실물 서버 반영** — **파일 지문(`index-*.js` 해시) 변경**
+   - Published 실물 URL: `https://veri-node-builder-v2.lovable.app`
+     (지문 대조: `curl -s <URL> | grep -oE 'index-[A-Za-z0-9_-]+\.js'`)
+   - ⚠️ `id-preview-…lovable.app`(에디터 프리뷰)는 lovable.dev 로그인 리다이렉트라 대조 불가.
+     `<uuid>.lovable.app`은 404. 위 Published URL만 실물이다.
 
 셋 중 하나라도 어긋나면 **배포 안 된 것**이다.
 ⚠️ **Lovable UI의 "Published" 표시는 ③의 증거가 아니다.**
