@@ -278,7 +278,7 @@ export function MydataConnectionSheet({
             <div className="text-sm">
               <p className="font-medium text-amber-600">더 많은 기관을 연결하면</p>
               <p className="text-muted-foreground text-xs mt-1">
-                소비 패턴 분석이 더 정확해지고, 데이터 가치가 최대 3배까지 상승합니다.
+                소비 패턴 분석이 더 정확해집니다.
               </p>
             </div>
           </div>
