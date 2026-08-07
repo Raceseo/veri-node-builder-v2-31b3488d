@@ -41,7 +41,7 @@ const TrustScoreHeader = ({
   const level = getLevel();
 
   return (
-    <div className="relative bg-gradient-secure text-primary-foreground rounded-2xl p-5 shadow-lg shadow-trust overflow-hidden">
+    <div className="relative bg-gradient-secure text-primary-foreground rounded-2xl p-3 shadow-lg shadow-trust overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-15">
         <div className="absolute top-0 right-0 w-32 h-32 bg-trust/30 rounded-full blur-3xl" />
@@ -74,58 +74,28 @@ const TrustScoreHeader = ({
         </>
       )}
 
-      <div className="relative z-10">
-        {/* Header Row */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-trust/20 flex items-center justify-center backdrop-blur-sm border border-trust/30">
-              <Shield className="w-6 h-6 text-trust-light" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold">신뢰 점수</h2>
-              <p className="text-sm text-primary-foreground/70">Trust Score</p>
-            </div>
-          </div>
-          <div className="text-right">
-            <div className={`text-3xl font-bold ${animating ? 'animate-score-up' : ''}`}>
-              {displayScore}
-              <span className="text-lg text-primary-foreground/60">/{maxScore}</span>
-            </div>
-            <span className={`text-sm font-medium ${level.color}`}>{level.label} 등급</span>
-          </div>
+      {/* 홈 첫 화면 압축(1줄): 아이콘 · "신뢰 점수" · 실값 0/100 · 등급 · 얇은 진행바.
+          면적만 줄이고 실값(점수·등급)은 유지한다. 부제/하단 안내문은 제거. */}
+      <div className="relative z-10 flex items-center gap-2.5">
+        <div className="w-9 h-9 rounded-lg bg-trust/20 flex items-center justify-center backdrop-blur-sm border border-trust/30 shrink-0">
+          <Shield className="w-5 h-5 text-trust-light" />
         </div>
+        <span className="text-sm font-bold shrink-0">신뢰 점수</span>
+        <div className={`text-2xl font-bold leading-none shrink-0 ${animating ? 'animate-score-up' : ''}`}>
+          {displayScore}
+          <span className="text-base text-primary-foreground/60">/{maxScore}</span>
+        </div>
+        <span className={`text-sm font-medium shrink-0 ${level.color}`}>· {level.label}</span>
 
-        {/* Progress Bar - Trust Gradient */}
-        <div className="relative h-3 bg-white/10 rounded-full overflow-hidden mb-3">
-          <div 
+        {/* 남은 폭을 채우는 얇은 진행바 */}
+        <div className="relative flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden ml-1">
+          <div
             className="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out"
-            style={{ 
+            style={{
               width: `${percentage}%`,
               background: 'linear-gradient(90deg, hsl(217 91% 60%), hsl(168 76% 36%))'
             }}
           />
-          <div 
-            className="absolute inset-y-0 left-0 rounded-full opacity-50 blur-sm"
-            style={{ 
-              width: `${percentage}%`,
-              background: 'linear-gradient(90deg, hsl(217 91% 60%), hsl(168 76% 36%))'
-            }}
-          />
-        </div>
-
-        {/* Info Row */}
-        <div className="flex items-center justify-between text-sm">
-          {/* B-25: 점수 상승 경로는 실재하나(AntiCherryPickerSurveyView 인증 모드가
-              trust_score 를 +5/+15 갱신) is_verified 게이트로 최초 1회 한정이다(:325).
-              "인증을 완료하면"은 이미 인증한 사용자에게도 계속 보여 오해를 준다 → 1회성 명시.
-              오른쪽은 "올릴 수 있어요"라는 약속을 걷어내고 남은 점수만 사실로 표시한다.
-              (최대 상승 폭은 +15 라 "N% 더 올릴 수 있어요"는 도달 불가능한 약속이었다) */}
-          <span className="text-primary-foreground/70">
-            첫 데이터 인증 시 점수가 올라가요
-          </span>
-          <span className="font-medium text-trust-light">
-            남은 점수 {Math.round(100 - percentage)}점
-          </span>
         </div>
       </div>
     </div>

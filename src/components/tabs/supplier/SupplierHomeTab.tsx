@@ -57,43 +57,36 @@ const SupplierHomeTab = ({
   const grade = getGrade(trustScore);
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 space-y-3">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="space-y-4"
+        className="space-y-3"
       >
-        {/* VN 잔액 카드 (VN 자산 + VN 잔액 통합) */}
-        <Card className="p-4 bg-gradient-to-br from-primary/5 via-background to-primary/10 border-primary/20">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+        {/* VN 잔액 카드 — 홈 첫 화면 압축(1줄): 잔액 실값 유지, 카드 전체 탭 → 포트폴리오 */}
+        <Card
+          onClick={onOpenPortfolio}
+          className="p-3 bg-gradient-to-br from-primary/5 via-background to-primary/10 border-primary/20 cursor-pointer hover:border-primary/40 transition-colors"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
                 <PiggyBank className="w-4 h-4 text-primary" />
               </div>
-              <span className="text-sm font-medium text-muted-foreground">VN 잔액</span>
+              <span className="text-sm font-medium text-muted-foreground shrink-0">VN 잔액</span>
+              <span className="text-xl font-bold text-foreground leading-none">{formatCurrency(vnBalance)}</span>
+              <span className="text-xs text-muted-foreground shrink-0">VN</span>
+              {isVerified && (
+                <Badge variant="secondary" className={`${grade.bg} ${grade.color} border-0 shrink-0`}>
+                  {grade.label}등급
+                </Badge>
+              )}
             </div>
-            {isVerified && (
-              <Badge variant="secondary" className={`${grade.bg} ${grade.color} border-0`}>
-                {grade.label}등급
-              </Badge>
-            )}
-          </div>
-
-          <div className="mb-4">
-            <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-bold text-foreground">{formatCurrency(vnBalance)}</span>
-              <span className="text-sm text-muted-foreground">VN</span>
+            <div className="flex items-center gap-0.5 text-sm text-muted-foreground shrink-0">
+              자산 상세
+              <ChevronRight className="w-4 h-4" />
             </div>
           </div>
-
-          <Button
-            onClick={onOpenPortfolio}
-            variant="outline"
-            className="w-full justify-between"
-          >
-            자산 상세 보기
-            <ChevronRight className="w-4 h-4" />
-          </Button>
         </Card>
 
         {/* 🚀 데이터 공급하기 (주 CTA) */}
