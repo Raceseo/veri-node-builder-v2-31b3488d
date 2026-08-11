@@ -210,6 +210,7 @@ const SupplierLayout = ({ onSwitchToDemand }: SupplierLayoutProps) => {
             isVerified={isVerified}
             onStartVerification={handleStartSurvey}   // ✅ DataLinkPromptStep 먼저
             onOpenWallet={() => setActiveTab("wallet")}  // B-36: VN 카드 → 내 지갑 탭 (포트폴리오 진입 숨김)
+            onGoToEarn={() => setActiveTab("earn")}   // 홈 주 CTA → 수익 쌓기 탭(설문 목록)
           />
         );
       case "earn":

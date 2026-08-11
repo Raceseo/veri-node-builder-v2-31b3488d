@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import {
   Shield, ChevronRight, Sparkles,
-  PiggyBank, Upload
+  PiggyBank, Upload, Coins
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ interface SupplierHomeTabProps {
   isVerified?: boolean;
   onStartVerification?: () => void;
   onOpenWallet?: () => void;   // VN 잔액 카드 탭 → 내 지갑 탭 (포트폴리오 진입 숨김, B-36)
+  onGoToEarn?: () => void;     // 홈 주 CTA → 수익 쌓기 탭(설문 목록). 탭 전환은 부모(SupplierLayout)가 수행
 }
 
 const SupplierHomeTab = ({
@@ -25,6 +26,7 @@ const SupplierHomeTab = ({
   isVerified: propIsVerified,
   onStartVerification,
   onOpenWallet,
+  onGoToEarn,
 }: SupplierHomeTabProps) => {
   const navigate = useNavigate();
 
@@ -89,20 +91,31 @@ const SupplierHomeTab = ({
           </div>
         </Card>
 
-        {/* 🚀 데이터 공급하기 (주 CTA) */}
+        {/* 🎯 설문 참여 (주 CTA) — 1호 상품(설문 거래) 동선. 클릭 시 수익 쌓기 탭(설문 목록)으로 전환.
+            기존 "데이터 공급하기"의 주 CTA 스타일을 그대로 물려받는다. */}
         <motion.div
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
           <Button
-            onClick={() => navigate('/security-engine')}
+            onClick={onGoToEarn}
             className="w-full h-14 bg-gradient-to-r from-blue-600 via-blue-500 to-emerald-500 hover:from-blue-700 hover:via-blue-600 hover:to-emerald-600 text-white font-bold text-base shadow-lg shadow-blue-500/30"
           >
-            <Upload className="w-5 h-5 mr-2" />
-            데이터 공급하기
+            <Coins className="w-5 h-5 mr-2" />
+            설문 참여하고 VN 받기
             <Sparkles className="w-4 h-4 ml-2 animate-pulse" />
           </Button>
         </motion.div>
+
+        {/* 데이터 공급하기 — 주 CTA에서 보조 버튼으로 강등(1호 상품 아님). */}
+        <Button
+          onClick={() => navigate('/security-engine')}
+          variant="outline"
+          className="w-full h-12 font-medium"
+        >
+          <Upload className="w-4 h-4 mr-2" />
+          데이터 공급하기
+        </Button>
 
         {/* Quick Action — 데이터 인증 (B-36: 포트폴리오 카드 제거로 전폭화) */}
         <motion.div whileTap={{ scale: 0.98 }}>
