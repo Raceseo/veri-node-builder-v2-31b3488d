@@ -167,3 +167,41 @@ PR #4의 수요 검증 설문에서 **Go 신호** 나오면 다시 verinode 개�
 1. Lovable은 DB 변경을 자동으로 repo에 commit해주지 않습니다. 확인됨.
 2. 그러니 Lovable로 DB 건드릴 때마다 `npx supabase db pull` → commit이 사용자분의 루틴이 돼야 합니다.
 3. 한 주에 한 번이라도 패턴 C의 dry-run 점검을 돌리면 이번 같은 drift가 쌓이기 전에 잡을 수 있습니다.
+
+---
+
+## 8) 인수인계 — 미리보기 DB 오참조 사건 (2026-08-12 해결)
+
+### 사건
+Lovable **에디터 프리뷰**가 `bhuwicburjiyplsotzqo`(Lovable Cloud 자동생성 DB)를
+참조했다. 서울 정본 `okeeihfmagfogvuxzszb`이 **아님**.
+→ 배포 실물(`veri-node-builder-v2.lovable.app`)은 정상이었고, 프리뷰만 잘못된 DB를 봤다.
+
+### 시도 이력
+| # | 방법 | 커밋 | 결과 |
+|---|------|------|------|
+| ① | Lovable Secrets에 `VITE_*` 등록 | — | ❌ 플랫폼 거부 ("VITE_ 변수는 .env에 정의해야 함") |
+| ② | `.env.development` 생성 | `0e84810` | ❌ 실패. 파일 도착은 확인됐으나 프리뷰가 계속 bhuwic 참조 → Lovable이 런타임 주입 또는 dev 모드 불일치로 추정 |
+| ③ | `client.ts`에 URL·key 하드코딩 | `0bfc960` | ✅ 성공. 응답 헤더 `Sb-Project-Ref: okeeihfmagfogvuxzszb` 실측 확인 |
+
+### 근본 원인 (추정)
+`.env` 계열 파일로는 프리뷰를 이길 수 없다. Lovable이 프리뷰 런타임에 환경변수를
+주입하거나, dev 모드가 `development`가 아니어서 `.env.development`가 로드되지 않는다.
+어느 쪽이든 `src/integrations/supabase/client.ts`에 값을 직접 박아야 확실하다.
+
+### 남은 사항 / 리스크
+- 🔴 **`client.ts`는 "automatically generated" 파일이다.** Lovable이 Supabase
+  통합을 다시 만지면 이 파일을 **재생성하며 하드코딩을 덮어쓸 위험**이 있다.
+  → **주기적으로 `client.ts` 상단이 하드코딩 상태인지 확인할 것.** 아래 명령으로 즉시 점검:
+  ```bash
+  grep -n "okeeihfmagfogvuxzszb" src/integrations/supabase/client.ts   # 없으면 덮어쓰기 발생
+  ```
+  덮어써졌으면 `0bfc960` 커밋의 diff를 다시 적용한다.
+- `0e84810`(`.env.development`)은 **무해하므로 존치**한다. 되돌릴 필요 없음.
+- **Publish는 미실시.** 하드코딩 값이 `.env.production`과 **동일**하므로 배포 실물의
+  동작은 변하지 않는다(배포본은 이미 정본 DB를 봤음). 프리뷰만 교정된 것.
+
+### ⚠️ 운영 변경 (중요)
+**프리뷰가 이제 운영(정본) DB에 직결된다.**
+프리뷰에서 하는 모든 조작이 서울 정본 DB에 실제로 쓰인다.
+→ **테스트는 반드시 `+v###` 별칭 계정으로만 할 것.** 실계정·실데이터 오염 금지.
