@@ -61,10 +61,12 @@ serve(async (req) => {
       // 중복은 실패가 아니라 "이미 완료" → 200 으로 반환해 프론트가 정상 분기하게 함
       if (code === 'already_claimed') return json({ already_claimed: true }, 200);
       const map: Record<string, [string, number]> = {
-        survey_not_found:  ['설문을 찾을 수 없습니다', 404],
-        survey_not_active: ['진행 중인 설문이 아닙니다', 400],
-        no_reward:         ['보상이 설정되지 않은 설문입니다', 400],
-        no_response:       ['먼저 설문에 응답해야 합니다', 400],
+        survey_not_found:   ['설문을 찾을 수 없습니다', 404],
+        survey_not_active:  ['진행 중인 설문이 아닙니다', 400],
+        no_reward:          ['보상이 설정되지 않은 설문입니다', 400],
+        no_response:        ['먼저 설문에 응답해야 합니다', 400],
+        incomplete_survey:  ['모든 문항에 응답해야 보상이 지급됩니다', 400],
+        too_fast:           ['응답이 너무 빨라요. 문항을 충분히 읽고 다시 응답해 주세요', 400],
       };
       const [msg, status] = map[code ?? ''] ?? ['보상 적립 실패', 400];
       return json({ error: msg, code }, status);
