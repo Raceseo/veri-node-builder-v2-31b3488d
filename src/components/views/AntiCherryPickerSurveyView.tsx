@@ -556,7 +556,8 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
   const handleNextQuestion = () => {
     const q = surveyQuestions[currentQuestionIndex];
     const hasOptions = (q.options?.length ?? 0) > 0;
-    // 결정B: multi_choice 만 선택 텍스트 배열을 JSON.stringify 로 저장. single_choice/text 는 문자열 그대로.
+    // 결정B: multi_choice 만 선택 텍스트 배열을 JSON.stringify 로 저장.
+    //        single_choice/text 는 문자열 그대로, scale 은 "1"~"5" 문자열 그대로.
     const isMulti = q.type === "multi_choice" && hasOptions;
     const answerValue = isMulti ? JSON.stringify(selectedMulti) : currentAnswer;
     const timeSpent = Date.now() - questionStartTime;
@@ -809,13 +810,16 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
         </div>
       );
     }
-    // 조건1·조건4: 객관식은 options 순서 그대로 버튼 렌더. scale 은 오늘 미구현 → text 와 동일 fallback(자유입력)으로 안 깨지게만.
+    // 조건1·조건4: 객관식은 options 순서 그대로 버튼 렌더. scale 은 1~5 고정 척도 버튼(2026-08-13 구현).
     const qOptions = currentQ.options ?? [];
     const isSingle = currentQ.type === "single_choice" && qOptions.length > 0;
     const isMultiChoice = currentQ.type === "multi_choice" && qOptions.length > 0;
+    const isScale = currentQ.type === "scale";
     const isChoice = isSingle || isMultiChoice;
-    // 10자 강제 폐지: single=1개 선택 / multi=최소 1개 선택 / text·fallback=빈칸만 방지(1자 이상)
-    const canProceed = isSingle
+    // 척도는 options 를 쓰지 않는다 — 1~5 고정. 저장은 "1"~"5" 문자열.
+    const SCALE_VALUES = ["1", "2", "3", "4", "5"];
+    // 10자 강제 폐지: single=1개 선택 / multi=최소 1개 선택 / scale=1개 선택 / text·fallback=빈칸만 방지(1자 이상)
+    const canProceed = isSingle || isScale
       ? currentAnswer.length > 0
       : isMultiChoice
         ? selectedMulti.length > 0
@@ -880,8 +884,35 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
                   <p className="text-xs text-slate-500 pt-1">복수 선택 가능</p>
                 )}
               </div>
+            ) : isScale ? (
+              // scale: 1~5 고정 척도. options 를 쓰지 않으며 선택 스타일은 객관식과 동일.
+              <div>
+                <div className="flex items-stretch gap-2">
+                  {SCALE_VALUES.map((val) => {
+                    const selected = currentAnswer === val;
+                    return (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setCurrentAnswer(val)}
+                        className={`flex-1 flex items-center justify-center py-4 rounded-xl border text-lg font-semibold transition-colors ${
+                          selected
+                            ? "bg-blue-600/20 border-blue-500 text-slate-100"
+                            : "bg-slate-900/50 border-slate-600 text-slate-200 hover:border-slate-500"
+                        }`}
+                      >
+                        {val}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="flex justify-between mt-2 text-xs text-slate-500">
+                  <span>전혀 아니다</span>
+                  <span>매우 그렇다</span>
+                </div>
+              </div>
             ) : (
-              // text · scale(fallback): 기존 자유입력. 붙여넣기·타이핑 감지 유지(조건4 — 손대지 않음).
+              // text: 자유입력. 붙여넣기·타이핑 감지 유지(조건4 — 손대지 않음).
               <>
                 <Textarea
                   value={currentAnswer}
@@ -903,7 +934,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
               </>
             )}
           </div>
-          {!isChoice && (
+          {!isChoice && !isScale && (
             <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg mb-6">
               <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
               <span className="text-xs text-amber-400">입력 속도와 패턴이 실시간으로 기록됩니다.</span>
