@@ -88,6 +88,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
   const [rewardVn, setRewardVn] = useState<number | null>(null); // DB 설문 모드: surveys.reward_vn 실제 보상값
   // C-3: 보상 적립의 실제 결과. complete 화면 문구/버튼이 이 값을 읽어 분기(표시용 배선만 — 적립·잔액 로직 무변경).
   const [claimOutcome, setClaimOutcome] = useState<"success" | "already" | "failed" | null>(null);
+  const [claimFailMsg, setClaimFailMsg] = useState<string | null>(null); // B-55: 보상 실패 사유 문구
 
   const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
   const [charCount, setCharCount] = useState(0);
@@ -447,14 +448,27 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
   //    중복/위조/응답실재는 모두 서버(claim-survey-reward)에서 검증한다.
   const claimSurveyReward = async () => {
     if (!surveyId) return;
+    // B-55: 보상 실패 사유(code)별 정직한 안내. code 미상·파싱 실패는 반드시 불명 문구로 폴백.
+    const failMessage = (code?: string | null): string => {
+      switch (code) {
+        case "incomplete_survey": return "모든 문항에 답해야 보상이 지급됩니다";
+        case "too_fast":          return "응답이 너무 빠르게 완료되었습니다. 문항을 확인하고 다시 응답해 주세요";
+        default:                  return "보상 적립에 실패했습니다. 잠시 후 다시 시도해 주세요";
+      }
+    };
     try {
       const { data, error } = await supabase.functions.invoke("claim-survey-reward", {
         body: { surveyId },
       });
       if (error) {
-        console.error("보상 적립 실패:", error);
+        // 실패 사유 code 는 비-2xx 응답 본문에 있음 → error.context(Response) 파싱. 실패 시 code=null.
+        let code: string | null = null;
+        try { code = (await (error as any).context?.json())?.code ?? null; } catch { code = null; }
+        const msg = failMessage(code);
+        console.error("보상 적립 실패:", { code });
         setClaimOutcome("failed"); // C-3: 실패 결과 기록(화면 표시용)
-        toast({ title: "보상 적립 실패", description: "잔액은 잠시 후 반영될 수 있어요.", variant: "destructive" });
+        setClaimFailMsg(msg);      // B-55: 화면·토스트 공통 사유 문구
+        toast({ title: "보상 적립 실패", description: msg, variant: "destructive" });
         return;
       }
       if (data?.already_claimed) {
@@ -476,7 +490,8 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
       queryClient.invalidateQueries({ queryKey: ["active-surveys"] });
     } catch (e) {
       console.error("보상 적립 오류:", e);
-      setClaimOutcome("failed"); // C-3: 예외도 실패로 기록(무응답 blank 방지)
+      setClaimOutcome("failed");          // C-3: 예외도 실패로 기록(무응답 blank 방지)
+      setClaimFailMsg(failMessage(null)); // B-55: 응답 없음(예외) → 불명 문구로 폴백
     }
   };
 
@@ -1059,7 +1074,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
           {isDbSurveyMode && claimOutcome === "failed" && (
             <div className="mb-6">
               <p className="text-amber-400 text-sm font-semibold">⚠️ 응답은 저장되었지만 보상 적립이 처리되지 않았습니다</p>
-              <p className="text-slate-400 text-sm mt-1">수익 쌓기 탭에서 다시 시도해 주세요</p>
+              <p className="text-slate-400 text-sm mt-1">{claimFailMsg ?? "보상 적립에 실패했습니다. 잠시 후 다시 시도해 주세요"}</p>
             </div>
           )}
           {isFullyLinked && (
