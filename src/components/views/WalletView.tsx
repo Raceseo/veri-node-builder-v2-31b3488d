@@ -35,6 +35,10 @@ interface WalletViewProps {
   onOpenDataMarketplace?: () => void; // Phase 3 데이터 마켓플레이스
 }
 
+// 출금 정직화: 지급 실행부 미구현·환율 Mock 상태라 출금 UI 차단(카페 배포 전).
+// 이 상수만 true 로 되돌리면 WithdrawalSimulation 이 그대로 복원된다(코드 삭제 없음).
+const WITHDRAWAL_ENABLED: boolean = false;
+
 const WalletView = ({ onOpenDataAssetDashboard, estimatedMonthlyPension, onOpenDataMarketplace }: WalletViewProps) => {
   const [selectedDonation, setSelectedDonation] = useState<typeof donations[0] | null>(null);
   const [isDonationSheetOpen, setIsDonationSheetOpen] = useState(false);
@@ -156,19 +160,21 @@ const WalletView = ({ onOpenDataAssetDashboard, estimatedMonthlyPension, onOpenD
           />
         </div>
 
-        {/* Withdrawal Simulation - Phase 3 */}
-        <WithdrawalSimulation 
-          balance={balance}
-          onComplete={(amount) => {
-            console.log('Withdrawal completed:', amount);
-          }}
-        />
+        {/* Withdrawal Simulation - Phase 3 (출금 정직화: 지급부 미구현·환율 Mock 로 차단) */}
+        {WITHDRAWAL_ENABLED && (
+          <WithdrawalSimulation
+            balance={balance}
+            onComplete={(amount) => {
+              console.log('Withdrawal completed:', amount);
+            }}
+          />
+        )}
 
         {/* Balance Card */}
         <div className="bg-card rounded-2xl p-6 shadow-card text-center">
           <p className="text-sm text-muted-foreground mb-2">총 보유 수익금</p>
           <p className="text-4xl font-bold text-foreground mb-1">
-            {balance.toLocaleString()}<span className="text-xl">원</span>
+            {balance.toLocaleString()}<span className="text-xl">VN</span>
           </p>
           <p className="text-sm text-success flex items-center justify-center gap-1 mb-6">
             <TrendingUp className="w-4 h-4" />
@@ -263,7 +269,7 @@ const WalletView = ({ onOpenDataAssetDashboard, estimatedMonthlyPension, onOpenD
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-success font-bold">+{item.amount.toLocaleString()}원</span>
+                      <span className="text-success font-bold">+{item.amount.toLocaleString()} VN</span>
                       <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     </div>
                   </button>
@@ -288,7 +294,7 @@ const WalletView = ({ onOpenDataAssetDashboard, estimatedMonthlyPension, onOpenD
                 <span className="inline-block px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium mb-2">
                   {survey.tag}
                 </span>
-                <span className="float-right text-success text-sm font-bold">+{survey.reward.toLocaleString()}원</span>
+                <span className="float-right text-success text-sm font-bold">+{survey.reward.toLocaleString()} VN</span>
                 <p className="font-medium text-foreground text-sm line-clamp-2">{survey.title}</p>
                 <p className="text-xs text-muted-foreground mt-1">소요시간 {survey.time}</p>
               </div>

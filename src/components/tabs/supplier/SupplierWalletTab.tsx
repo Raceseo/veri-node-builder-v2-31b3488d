@@ -41,6 +41,10 @@ const getTierFromScore = (score: number): "Bronze" | "Silver" | "Gold" | "Diamon
   return "Bronze";
 };
 
+// 출금 정직화: 지급 실행부 미구현·환율 Mock 상태라 출금 UI 전면 차단(카페 배포 전).
+// 이 상수만 true 로 되돌리면 탭·출금버튼·원화표기가 그대로 복원된다(코드 삭제 없음).
+const WITHDRAWAL_ENABLED: boolean = false;
+
 const SupplierWalletTab = ({
   vnBalance,
   trustScore,
@@ -116,9 +120,11 @@ const SupplierWalletTab = ({
             </span>
             <span className="text-sm text-muted-foreground">VN</span>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            ≈ {formatCurrency(vnBalance * 10)} 원
-          </p>
+          {WITHDRAWAL_ENABLED && (
+            <p className="text-xs text-muted-foreground mt-1">
+              ≈ {formatCurrency(vnBalance * 10)} 원
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-3 gap-2 mb-4">
@@ -134,16 +140,18 @@ const SupplierWalletTab = ({
             <p className="text-sm font-semibold text-amber-600">{formatCurrency(escrowedBalance)} VN</p>
           </div>
           <div className="p-2 rounded-lg bg-blue-500/10">
-            <p className="text-[10px] text-muted-foreground mb-0.5">연금 적립</p>
+            <p className="text-[10px] text-muted-foreground mb-0.5">적립 예정</p>
             <p className="text-sm font-semibold text-blue-600">{formatCurrency(lockedBalance)} VN</p>
           </div>
         </div>
 
         <div className="flex gap-2">
-          <Button className="flex-1" variant="default" onClick={() => setActiveTab('withdraw')}>
-            <ArrowUpRight className="w-4 h-4 mr-2" />
-            출금
-          </Button>
+          {WITHDRAWAL_ENABLED && (
+            <Button className="flex-1" variant="default" onClick={() => setActiveTab('withdraw')}>
+              <ArrowUpRight className="w-4 h-4 mr-2" />
+              출금
+            </Button>
+          )}
           <Button className="flex-1" variant="outline">
             <ArrowDownLeft className="w-4 h-4 mr-2" />
             충전
@@ -153,12 +161,16 @@ const SupplierWalletTab = ({
 
       {/* Tabs: History / Status / Account / Withdrawal / Simulation */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full grid grid-cols-5">
+        <TabsList className={`w-full grid ${WITHDRAWAL_ENABLED ? "grid-cols-5" : "grid-cols-1"}`}>
           <TabsTrigger value="balance" className="text-xs">내역</TabsTrigger>
-          <TabsTrigger value="status" className="text-xs">정산</TabsTrigger>
-          <TabsTrigger value="account" className="text-xs">계좌</TabsTrigger>
-          <TabsTrigger value="withdraw" className="text-xs">출금</TabsTrigger>
-          <TabsTrigger value="simulation" className="text-xs">연금</TabsTrigger>
+          {WITHDRAWAL_ENABLED && (
+            <>
+              <TabsTrigger value="status" className="text-xs">정산</TabsTrigger>
+              <TabsTrigger value="account" className="text-xs">계좌</TabsTrigger>
+              <TabsTrigger value="withdraw" className="text-xs">출금</TabsTrigger>
+              <TabsTrigger value="simulation" className="text-xs">연금</TabsTrigger>
+            </>
+          )}
         </TabsList>
 
         <TabsContent value="balance" className="mt-4 space-y-3">
@@ -200,32 +212,36 @@ const SupplierWalletTab = ({
           </Button>
         </TabsContent>
 
-        <TabsContent value="status" className="mt-4">
-          <WithdrawalStatusList />
-        </TabsContent>
+        {WITHDRAWAL_ENABLED && (
+          <>
+            <TabsContent value="status" className="mt-4">
+              <WithdrawalStatusList />
+            </TabsContent>
 
-        <TabsContent value="account" className="mt-4">
-          <BankAccountRegistration 
-            onRegistered={() => {
-              console.log('Account registered successfully');
-            }}
-          />
-        </TabsContent>
+            <TabsContent value="account" className="mt-4">
+              <BankAccountRegistration
+                onRegistered={() => {
+                  console.log('Account registered successfully');
+                }}
+              />
+            </TabsContent>
 
-        <TabsContent value="withdraw" className="mt-4">
-          <WithdrawalForm 
-            availableBalance={availableBalance}
-            escrowedBalance={escrowedBalance}
-            onSubmit={(data) => {
-              console.log('Withdrawal submitted:', data);
-              setActiveTab('status'); // 정산 현황 탭으로 이동
-            }}
-          />
-        </TabsContent>
+            <TabsContent value="withdraw" className="mt-4">
+              <WithdrawalForm
+                availableBalance={availableBalance}
+                escrowedBalance={escrowedBalance}
+                onSubmit={(data) => {
+                  console.log('Withdrawal submitted:', data);
+                  setActiveTab('status'); // 정산 현황 탭으로 이동
+                }}
+              />
+            </TabsContent>
 
-        <TabsContent value="simulation" className="mt-4">
-          <WithdrawalSimulation balance={vnBalance} />
-        </TabsContent>
+            <TabsContent value="simulation" className="mt-4">
+              <WithdrawalSimulation balance={vnBalance} />
+            </TabsContent>
+          </>
+        )}
       </Tabs>
     </div>
   );
