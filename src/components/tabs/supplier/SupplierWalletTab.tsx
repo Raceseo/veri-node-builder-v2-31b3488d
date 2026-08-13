@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
-import { 
-  Wallet, ArrowUpRight, ArrowDownLeft, History, 
+import {
+  Wallet, ArrowUpRight, ArrowDownLeft, Loader2,
   ChevronRight, CreditCard, Building2, TrendingUp, Clock
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,12 +27,10 @@ interface SupplierWalletTabProps {
   isVerified?: boolean;
 }
 
-const recentTransactions = [
-  { id: 1, type: "income", description: "삼성카드 데이터 판매", amount: 12500, date: "오늘 14:23" },
-  { id: 2, type: "income", description: "롯데마트 리워드", amount: 8000, date: "어제 11:45" },
-  { id: 3, type: "withdraw", description: "계좌 출금", amount: -50000, date: "3일 전" },
-  { id: 4, type: "income", description: "신한은행 데이터 판매", amount: 15000, date: "5일 전" },
-];
+// 거래 type → 사실 기반 한국어 라벨. 미지 type 은 type 문자열 그대로(허위 라벨 금지).
+const TX_TYPE_LABEL: Record<string, string> = {
+  survey_reward: "설문 참여 보상",
+};
 
 // Helper to get tier from trust score
 const getTierFromScore = (score: number): "Bronze" | "Silver" | "Gold" | "Diamond" | "Platinum" => {
@@ -52,6 +52,25 @@ const SupplierWalletTab = ({
   isVerified = false,
 }: SupplierWalletTabProps) => {
   const { user } = useAuth();
+
+  // B-64: 지갑 내역 실거래 조회. 타입 화이트리스트 없이 해당 유저 전체 거래 최신 5건.
+  //   별도 queryKey 로 WalletView(type='earn' 필터)의 캐시와 분리한다.
+  const { data: recentTransactions, isLoading: txLoading } = useQuery({
+    queryKey: ["supplier-wallet-transactions", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("id, type, amount, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!user,
+  });
+
   const [activeTab, setActiveTab] = useState("balance");
   const [escrowedBalance, setEscrowedBalance] = useState(0);
 
@@ -174,42 +193,47 @@ const SupplierWalletTab = ({
         </TabsList>
 
         <TabsContent value="balance" className="mt-4 space-y-3">
-          {recentTransactions.map((tx, index) => (
-            <motion.div
-              key={tx.id}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.05 }}
-            >
-              <Card className="p-3">
-                <div className="flex items-center gap-3">
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
-                    tx.type === "income" ? "bg-emerald-500/10" : "bg-red-500/10"
-                  }`}>
-                    {tx.type === "income" ? (
-                      <ArrowDownLeft className="w-4 h-4 text-emerald-500" />
-                    ) : (
-                      <ArrowUpRight className="w-4 h-4 text-red-500" />
-                    )}
+          {txLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : !recentTransactions || recentTransactions.length === 0 ? (
+            <Card className="p-6 text-center">
+              <p className="text-sm text-muted-foreground">아직 거래 내역이 없습니다</p>
+            </Card>
+          ) : (
+            recentTransactions.map((tx, index) => (
+              <motion.div
+                key={tx.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.05 }}
+              >
+                <Card className="p-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                      tx.amount > 0 ? "bg-emerald-500/10" : "bg-red-500/10"
+                    }`}>
+                      {tx.amount > 0 ? (
+                        <ArrowDownLeft className="w-4 h-4 text-emerald-500" />
+                      ) : (
+                        <ArrowUpRight className="w-4 h-4 text-red-500" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-foreground">{TX_TYPE_LABEL[tx.type] ?? tx.type}</p>
+                      <p className="text-xs text-muted-foreground">{format(new Date(tx.created_at), "MM.dd")}</p>
+                    </div>
+                    <span className={`text-sm font-semibold ${
+                      tx.amount > 0 ? "text-emerald-600" : "text-red-500"
+                    }`}>
+                      {tx.amount > 0 ? "+" : tx.amount < 0 ? "-" : ""}{formatCurrency(tx.amount)} VN
+                    </span>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">{tx.description}</p>
-                    <p className="text-xs text-muted-foreground">{tx.date}</p>
-                  </div>
-                  <span className={`text-sm font-semibold ${
-                    tx.amount > 0 ? "text-emerald-600" : "text-red-500"
-                  }`}>
-                    {tx.amount > 0 ? "+" : ""}{formatCurrency(tx.amount)} VN
-                  </span>
-                </div>
-              </Card>
-            </motion.div>
-          ))}
-
-          <Button variant="ghost" className="w-full text-muted-foreground">
-            <History className="w-4 h-4 mr-2" />
-            전체 내역 보기
-          </Button>
+                </Card>
+              </motion.div>
+            ))
+          )}
         </TabsContent>
 
         {WITHDRAWAL_ENABLED && (
