@@ -1,22 +1,41 @@
 import { useState } from "react";
 import {
-  ArrowLeft, Plus, Trash2, FileText, Users, Zap, ChevronRight
+  ArrowLeft, Plus, Trash2, FileText, Users, Zap, ChevronRight, AlertCircle, Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
+import type { SurveyQuestionType } from "@/integrations/supabase/types.survey";
+import { MAX_QUESTIONS, getUnitPrice } from "@/lib/surveyPricing";
+
+/** 문항 수 상한 초과 안내. 상한값 자체는 surveyPricing 의 구간표에서 온다. */
+const OVER_LIMIT_NOTICE = `${MAX_QUESTIONS}문항 이내로 조정을 권해드립니다`;
 
 /**
- * 베타 임시 단가(원/응답 1건). 정식 가격이 아니다.
- * 근거 3출처 수렴: 김박사넷 지불의향 500~1,500 · 간호카페 분당 330(≈3분 1,000) · 오픈서베이 500 대비 프리미엄.
- * 정식 가격 설계는 게이트 판정 후 별건 — 화면에 "정식 가격은 오픈 시 확정"을 반드시 병기한다.
+ * 유형 목록. 값은 survey_questions.question_type CHECK 허용값과 **글자 그대로** 일치해야 한다.
+ * ('multiple_choice' 등 다른 철자는 DB 가 INSERT 를 거부한다.)
  */
-const UNIT_PRICE = 1000;
+const QUESTION_TYPES: { value: SurveyQuestionType; label: string }[] = [
+  { value: "single_choice", label: "객관식 — 단일 선택" },
+  { value: "multi_choice",  label: "객관식 — 복수 선택" },
+  { value: "scale",         label: "5점 척도" },
+  { value: "text",          label: "주관식" },
+];
+
+/** 보기 입력칸이 필요한 유형. scale·text 는 options 가 빈 배열이다. */
+const needsOptions = (type: SurveyQuestionType) =>
+  type === "single_choice" || type === "multi_choice";
 
 interface Question {
   id: string;
   text: string;
+  type: SurveyQuestionType;
+  /** 선택형만 사용. scale·text 는 항상 빈 배열(null 아님). */
+  options: string[];
 }
 
 interface TemplateConfig {
@@ -34,6 +53,13 @@ interface ProjectBuilderViewProps {
   initialTemplate?: TemplateConfig | null;
 }
 
+const newQuestion = (): Question => ({
+  id: Date.now().toString(),
+  text: "",
+  type: "single_choice",
+  options: ["", ""],   // 선택형 기본 2칸
+});
+
 const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps) => {
   const [projectName, setProjectName] = useState(
     initialTemplate ? `${initialTemplate.categoryName} - ${initialTemplate.templateName}` : ""
@@ -43,16 +69,20 @@ const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps
   const [questions, setQuestions] = useState<Question[]>(
     initialTemplate?.questions?.length
       ? initialTemplate.questions
-      : [{ id: "1", text: "" }]
+      : [{ id: "1", text: "", type: "single_choice", options: ["", ""] }]
   );
 
-  const estimatedCost = targetCount * UNIT_PRICE;
+  const questionCount = questions.length;
+  const unitPrice = getUnitPrice(questionCount);
+  const estimatedCost = unitPrice === null ? null : targetCount * unitPrice;
 
+  // ── 문항 편집 ──────────────────────────────────────────────────────────────
   const addQuestion = () => {
-    setQuestions([...questions, {
-      id: Date.now().toString(),
-      text: "",
-    }]);
+    if (questions.length >= MAX_QUESTIONS) {
+      toast({ title: "문항 수 초과", description: OVER_LIMIT_NOTICE, variant: "destructive" });
+      return;
+    }
+    setQuestions([...questions, newQuestion()]);
   };
 
   const removeQuestion = (id: string) => {
@@ -65,13 +95,58 @@ const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps
     setQuestions(questions.map(q => q.id === id ? { ...q, ...updates } : q));
   };
 
-  const handleSubmit = () => {
-    if (!projectName.trim()) {
-      toast({ title: "입력 필요", description: "프로젝트 명을 입력해주세요.", variant: "destructive" });
-      return;
+  /** 유형 변경 — 선택형이 아니면 options 를 빈 배열로 비운다(DB 실측 형태와 일치). */
+  const changeType = (id: string, type: SurveyQuestionType) => {
+    setQuestions(questions.map(q => {
+      if (q.id !== id) return q;
+      return {
+        ...q,
+        type,
+        options: needsOptions(type) ? (q.options.length ? q.options : ["", ""]) : [],
+      };
+    }));
+  };
+
+  const updateOption = (id: string, idx: number, value: string) => {
+    setQuestions(questions.map(q =>
+      q.id === id ? { ...q, options: q.options.map((o, i) => i === idx ? value : o) } : q
+    ));
+  };
+
+  const addOption = (id: string) => {
+    setQuestions(questions.map(q => q.id === id ? { ...q, options: [...q.options, ""] } : q));
+  };
+
+  const removeOption = (id: string, idx: number) => {
+    setQuestions(questions.map(q =>
+      q.id === id && q.options.length > 2
+        ? { ...q, options: q.options.filter((_, i) => i !== idx) }
+        : q
+    ));
+  };
+
+  // ── 유효성 검사 ────────────────────────────────────────────────────────────
+  const isQuestionValid = (q: Question) => {
+    if (!q.text.trim()) return false;
+    if (needsOptions(q.type)) {
+      if (q.options.length < 2) return false;
+      if (q.options.some(o => !o.trim())) return false;
     }
-    if (!researchPurpose.trim()) {
-      toast({ title: "입력 필요", description: "조사 목적을 입력해주세요.", variant: "destructive" });
+    return true;
+  };
+
+  const allQuestionsValid = questions.every(isQuestionValid);
+  const canSubmit =
+    projectName.trim().length > 0 &&
+    researchPurpose.trim().length > 0 &&
+    questionCount >= 1 &&
+    questionCount <= MAX_QUESTIONS &&
+    allQuestionsValid &&
+    unitPrice !== null;
+
+  const handleSubmit = () => {
+    if (!canSubmit) {
+      toast({ title: "입력 필요", description: "빈 항목을 채워주세요.", variant: "destructive" });
       return;
     }
     // 제출 처리(status='draft' INSERT)는 다음 단계에서 붙인다.
@@ -103,7 +178,7 @@ const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">프로젝트 명 *</label>
-              <Input 
+              <Input
                 value={projectName}
                 onChange={(e) => setProjectName(e.target.value)}
                 placeholder="예: 2024 MZ세대 소비 트렌드 조사"
@@ -113,7 +188,7 @@ const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps
 
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">조사 목적 *</label>
-              <Textarea 
+              <Textarea
                 value={researchPurpose}
                 onChange={(e) => setResearchPurpose(e.target.value)}
                 placeholder="본 조사의 목적과 활용 계획을 상세히 기술해주세요."
@@ -124,7 +199,7 @@ const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">타겟 응답자 수</label>
               <div className="flex items-center gap-3">
-                <Input 
+                <Input
                   type="number"
                   value={targetCount}
                   onChange={(e) => setTargetCount(Math.max(10, parseInt(e.target.value) || 10))}
@@ -140,35 +215,47 @@ const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps
           </div>
         </section>
 
-        {/* ===== 3. 질문 속성 연결 ===== */}
+        {/* ===== 2. 질문 구성 ===== */}
         <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
                 <Zap className="w-4 h-4 text-white" />
               </div>
-              <h2 className="font-bold text-slate-900">질문 구성</h2>
+              <div>
+                <h2 className="font-bold text-slate-900">질문 구성</h2>
+                <p className="text-xs text-slate-500">{questionCount} / {MAX_QUESTIONS}문항</p>
+              </div>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={addQuestion}
+              disabled={questionCount >= MAX_QUESTIONS}
               className="border-blue-600 text-blue-600 hover:bg-blue-50"
             >
               <Plus className="w-4 h-4 mr-1" /> 질문 추가
             </Button>
           </div>
 
+          {questionCount >= MAX_QUESTIONS && (
+            <div className="mb-4 flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+              <p className="text-sm text-amber-700">{OVER_LIMIT_NOTICE}</p>
+            </div>
+          )}
+
           <div className="space-y-4">
             {questions.map((question, index) => (
-              <div 
+              <div
                 key={question.id}
                 className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3"
               >
                 <div className="flex items-center justify-between">
+                  {/* order_no = 화면 표시 순서대로 1부터 연속 */}
                   <span className="text-sm font-medium text-slate-700">질문 {index + 1}</span>
                   {questions.length > 1 && (
-                    <button 
+                    <button
                       onClick={() => removeQuestion(question.id)}
                       className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"
                     >
@@ -177,38 +264,109 @@ const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps
                   )}
                 </div>
 
-                <Input 
+                <Select
+                  value={question.type}
+                  onValueChange={(v) => changeType(question.id, v as SurveyQuestionType)}
+                >
+                  <SelectTrigger className="border-slate-300 bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {QUESTION_TYPES.map(t => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Input
                   value={question.text}
                   onChange={(e) => updateQuestion(question.id, { text: e.target.value })}
                   placeholder="질문 내용을 입력하세요"
-                  className="border-slate-300"
+                  className="border-slate-300 bg-white"
                 />
 
+                {needsOptions(question.type) ? (
+                  <div className="space-y-2">
+                    <p className="text-xs text-slate-500">보기 (2개 이상)</p>
+                    {question.options.map((opt, oIdx) => (
+                      <div key={oIdx} className="flex items-center gap-2">
+                        <span className="shrink-0 w-6 h-6 rounded-full bg-slate-200 text-slate-600 text-xs flex items-center justify-center">
+                          {oIdx + 1}
+                        </span>
+                        <Input
+                          value={opt}
+                          onChange={(e) => updateOption(question.id, oIdx, e.target.value)}
+                          placeholder={`보기 ${oIdx + 1}`}
+                          className="border-slate-300 bg-white"
+                        />
+                        <button
+                          onClick={() => removeOption(question.id, oIdx)}
+                          disabled={question.options.length <= 2}
+                          className="p-1.5 text-slate-400 hover:text-red-500 disabled:opacity-30 disabled:hover:text-slate-400 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => addOption(question.id)}
+                      className="text-blue-600 hover:bg-blue-50"
+                    >
+                      <Plus className="w-4 h-4 mr-1" /> 보기 추가
+                    </Button>
+                  </div>
+                ) : question.type === "scale" ? (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 border border-blue-100">
+                    <Info className="w-4 h-4 text-blue-600 shrink-0" />
+                    <p className="text-sm text-blue-700">
+                      1~5점 척도입니다. 보기 입력이 필요하지 않습니다.
+                    </p>
+                  </div>
+                ) : null}
+
+                {!isQuestionValid(question) && (
+                  <p className="text-xs text-red-500">
+                    {!question.text.trim()
+                      ? "질문 내용을 입력해주세요."
+                      : "보기를 모두 채워주세요 (2개 이상)."}
+                  </p>
+                )}
               </div>
             ))}
           </div>
-
         </section>
 
         {/* ===== 예상 비용 ===== */}
         <section className="bg-slate-900 rounded-2xl p-5 shadow-lg">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-white">예상 비용</h3>
+            <span className="text-xs text-slate-400">{questionCount}문항 기준</span>
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-400">응답 수집</span>
-              <span className="text-white">₩{UNIT_PRICE.toLocaleString()} × {targetCount}명</span>
+          {unitPrice === null ? (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+              <p className="text-sm text-amber-300">{OVER_LIMIT_NOTICE}</p>
             </div>
-            <div className="border-t border-slate-700 pt-3 flex items-center justify-between">
-              <span className="text-white font-medium">예상 비용</span>
-              <span className="text-2xl font-bold text-amber-400">₩{estimatedCost.toLocaleString()}</span>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-400">응답 수집</span>
+                <span className="text-white">₩{unitPrice.toLocaleString()} × {targetCount}명</span>
+              </div>
+              <div className="border-t border-slate-700 pt-3 flex items-center justify-between">
+                <span className="text-white font-medium">예상 비용</span>
+                <span className="text-2xl font-bold text-amber-400">
+                  ₩{estimatedCost?.toLocaleString()}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
 
           <p className="text-xs text-slate-400 mt-4">
-            베타 기간 임시 단가입니다. 정식 가격은 오픈 시 확정됩니다.
+            단가는 문항 수 구간에 따라 달라집니다. 베타 기간 기준이며 정식 가격은 오픈 시 확정됩니다.
           </p>
         </section>
 
@@ -218,13 +376,16 @@ const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-200 max-w-md mx-auto">
         <Button
           onClick={handleSubmit}
-          className="w-full h-14 text-lg font-bold bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-500 hover:from-amber-600 hover:via-yellow-600 hover:to-amber-600 text-slate-900 shadow-lg"
+          disabled={!canSubmit}
+          className="w-full h-14 text-lg font-bold bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-500 hover:from-amber-600 hover:via-yellow-600 hover:to-amber-600 text-slate-900 shadow-lg disabled:opacity-40"
         >
           제출하기
           <ChevronRight className="w-5 h-5 ml-2" />
         </Button>
         <p className="text-center text-xs text-slate-500 mt-2">
-          예상 비용 ₩{estimatedCost.toLocaleString()} · 정식 가격은 오픈 시 확정
+          {unitPrice === null
+            ? OVER_LIMIT_NOTICE
+            : `예상 비용 ₩${estimatedCost?.toLocaleString()} · 정식 가격은 오픈 시 확정`}
         </p>
       </div>
     </div>
