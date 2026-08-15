@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   ArrowLeft, Plus, Trash2, FileText, Users, Zap, ChevronRight, AlertCircle, Info
 } from "lucide-react";
@@ -8,6 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import type { SurveyQuestionType } from "@/integrations/supabase/types.survey";
 import { MAX_QUESTIONS, getUnitPrice } from "@/lib/surveyPricing";
@@ -25,6 +29,33 @@ const QUESTION_TYPES: { value: SurveyQuestionType; label: string }[] = [
   { value: "scale",         label: "5점 척도" },
   { value: "text",          label: "주관식" },
 ];
+
+/**
+ * 「질문 추가」 버튼 — 목록 위·아래 두 곳에 같은 것을 놓는다.
+ * 문항이 늘면 상단 버튼이 스크롤 밖으로 나가 매번 맨 위로 올라가야 했다.
+ * 핸들러·잠금 조건은 호출부에서 받아 **한 곳에서만** 결정한다(로직 중복 금지).
+ */
+const AddQuestionButton = ({
+  onClick, disabled, full = false,
+}: { onClick: () => void; disabled: boolean; full?: boolean }) => (
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={onClick}
+    disabled={disabled}
+    className={`border-blue-600 text-blue-600 hover:bg-blue-50 ${full ? "w-full h-11" : ""}`}
+  >
+    <Plus className="w-4 h-4 mr-1" /> 질문 추가
+  </Button>
+);
+
+/** 문항 수 상한 안내 배너. 두 버튼 옆에 각각 붙는다(스크롤 위치와 무관하게 보이도록). */
+const LimitNotice = () => (
+  <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
+    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+    <p className="text-sm text-amber-700">{OVER_LIMIT_NOTICE}</p>
+  </div>
+);
 
 /** 보기 입력칸이 필요한 유형. scale·text 는 options 가 빈 배열이다. */
 const needsOptions = (type: SurveyQuestionType) =>
@@ -73,8 +104,19 @@ const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps
   );
 
   const questionCount = questions.length;
+  const atLimit = questionCount >= MAX_QUESTIONS;
   const unitPrice = getUnitPrice(questionCount);
   const estimatedCost = unitPrice === null ? null : targetCount * unitPrice;
+
+  // 새로 추가한 문항으로 스크롤 — 목록 아래 버튼으로 추가했을 때 새 카드가 화면 밖에 생기는 것을 막는다.
+  const questionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [pendingScrollId, setPendingScrollId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!pendingScrollId) return;
+    questionRefs.current[pendingScrollId]?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setPendingScrollId(null);
+  }, [pendingScrollId]);
 
   // ── 문항 편집 ──────────────────────────────────────────────────────────────
   const addQuestion = () => {
@@ -82,7 +124,9 @@ const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps
       toast({ title: "문항 수 초과", description: OVER_LIMIT_NOTICE, variant: "destructive" });
       return;
     }
-    setQuestions([...questions, newQuestion()]);
+    const q = newQuestion();
+    setQuestions([...questions, q]);
+    setPendingScrollId(q.id);
   };
 
   const removeQuestion = (id: string) => {
@@ -144,6 +188,23 @@ const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps
     allQuestionsValid &&
     unitPrice !== null;
 
+  // ── 이탈 경고 ──────────────────────────────────────────────────────────────
+  // 임시저장이 없으므로 나가면 작성분이 사라진다. 지금은 경고만 한다(저장 기능은 별건).
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+
+  const hasUnsavedInput =
+    projectName.trim().length > 0 ||
+    researchPurpose.trim().length > 0 ||
+    questions.some(q => q.text.trim().length > 0 || q.options.some(o => o.trim().length > 0));
+
+  const handleBack = () => {
+    if (hasUnsavedInput) {
+      setShowLeaveConfirm(true);
+      return;
+    }
+    onBack();
+  };
+
   const handleSubmit = () => {
     if (!canSubmit) {
       toast({ title: "입력 필요", description: "빈 항목을 채워주세요.", variant: "destructive" });
@@ -155,8 +216,8 @@ const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="sticky top-0 z-10 flex items-center gap-3 px-4 py-4 bg-white border-b border-slate-200">
-        <button onClick={onBack} className="p-2 -ml-2 text-slate-600 hover:text-slate-900 transition-colors">
+      <header className="sticky top-0 z-20 flex items-center gap-3 px-4 py-4 bg-white border-b border-slate-200 shadow-sm">
+        <button onClick={handleBack} className="p-2 -ml-2 text-slate-600 hover:text-slate-900 transition-colors">
           <ArrowLeft className="w-6 h-6" />
         </button>
         <div>
@@ -227,28 +288,16 @@ const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps
                 <p className="text-xs text-slate-500">{questionCount} / {MAX_QUESTIONS}문항</p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={addQuestion}
-              disabled={questionCount >= MAX_QUESTIONS}
-              className="border-blue-600 text-blue-600 hover:bg-blue-50"
-            >
-              <Plus className="w-4 h-4 mr-1" /> 질문 추가
-            </Button>
+            <AddQuestionButton onClick={addQuestion} disabled={atLimit} />
           </div>
 
-          {questionCount >= MAX_QUESTIONS && (
-            <div className="mb-4 flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
-              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-              <p className="text-sm text-amber-700">{OVER_LIMIT_NOTICE}</p>
-            </div>
-          )}
+          {atLimit && <div className="mb-4"><LimitNotice /></div>}
 
           <div className="space-y-4">
             {questions.map((question, index) => (
               <div
                 key={question.id}
+                ref={(el) => { questionRefs.current[question.id] = el; }}
                 className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3"
               >
                 <div className="flex items-center justify-between">
@@ -336,6 +385,12 @@ const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps
               </div>
             ))}
           </div>
+
+          {/* 목록 아래 「질문 추가」 — 상단 버튼이 스크롤 밖으로 나가도 여기서 계속 추가할 수 있다. */}
+          <div className="mt-4 space-y-3">
+            {atLimit && <LimitNotice />}
+            <AddQuestionButton onClick={addQuestion} disabled={atLimit} full />
+          </div>
         </section>
 
         {/* ===== 예상 비용 ===== */}
@@ -388,6 +443,20 @@ const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps
             : `예상 비용 ₩${estimatedCost?.toLocaleString()} · 유효 응답 기준 과금 · 미달 시 채운 만큼만 청구`}
         </p>
       </div>
+
+      {/* 이탈 경고 — 작성분은 저장되지 않는다. */}
+      <AlertDialog open={showLeaveConfirm} onOpenChange={setShowLeaveConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>작성 중인 내용이 저장되지 않습니다</AlertDialogTitle>
+            <AlertDialogDescription>나가시겠습니까?</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>계속 작성</AlertDialogCancel>
+            <AlertDialogAction onClick={onBack}>나가기</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
