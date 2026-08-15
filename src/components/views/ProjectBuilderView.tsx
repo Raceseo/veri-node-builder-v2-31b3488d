@@ -366,7 +366,7 @@ const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps
           )}
 
           <p className="text-xs text-slate-400 mt-4">
-            단가는 문항 수 구간에 따라 달라집니다. 베타 기간 기준이며 정식 가격은 오픈 시 확정됩니다.
+            단가는 문항 수 구간에 따라 달라집니다. 결제는 후불이며, 결과 확인 후 청구됩니다.
           </p>
         </section>
 
@@ -385,7 +385,7 @@ const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps
         <p className="text-center text-xs text-slate-500 mt-2">
           {unitPrice === null
             ? OVER_LIMIT_NOTICE
-            : `예상 비용 ₩${estimatedCost?.toLocaleString()} · 정식 가격은 오픈 시 확정`}
+            : `예상 비용 ₩${estimatedCost?.toLocaleString()} · 유효 응답 기준 과금 · 미달 시 채운 만큼만 청구`}
         </p>
       </div>
     </div>
