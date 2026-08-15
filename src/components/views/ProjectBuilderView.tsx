@@ -20,6 +20,18 @@ import { MAX_QUESTIONS, getUnitPrice } from "@/lib/surveyPricing";
 const OVER_LIMIT_NOTICE = `${MAX_QUESTIONS}문항 이내로 조정을 권해드립니다`;
 
 /**
+ * 접수 가능한 응답자 수 범위. 값은 여기 한 곳에만 두고 안내 문구도 여기서 파생시킨다.
+ * 상한 500 근거: 12문항 기준 ₩400,000 — 첫 거래 예상 규모의 16배라 정상 주문을 막지 않는다.
+ * 초과는 거절이 아니라 문의 유도.
+ */
+const MIN_RESPONDENTS = 10;
+const MAX_RESPONDENTS = 500;
+const EMPTY_RESPONDENTS_NOTICE = "인원을 입력하세요";
+const MIN_RESPONDENTS_NOTICE = `최소 ${MIN_RESPONDENTS}명 이상`;
+const MAX_RESPONDENTS_NOTICE =
+  `현재 최대 ${MAX_RESPONDENTS}명까지 접수 가능합니다. 그 이상은 contact@verinode.kr로 문의해 주세요.`;
+
+/**
  * 유형 목록. 값은 survey_questions.question_type CHECK 허용값과 **글자 그대로** 일치해야 한다.
  * ('multiple_choice' 등 다른 철자는 DB 가 INSERT 를 거부한다.)
  */
@@ -96,7 +108,8 @@ const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps
     initialTemplate ? `${initialTemplate.categoryName} - ${initialTemplate.templateName}` : ""
   );
   const [researchPurpose, setResearchPurpose] = useState("");
-  const [targetCount, setTargetCount] = useState(100);
+  /** 입력 중에는 문자열 그대로 보관한다 — 되돌리면 원하는 값을 칠 수 없다. 검증은 아래 파생값에서. */
+  const [targetCountInput, setTargetCountInput] = useState("100");
   const [questions, setQuestions] = useState<Question[]>(
     initialTemplate?.questions?.length
       ? initialTemplate.questions
@@ -106,7 +119,19 @@ const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps
   const questionCount = questions.length;
   const atLimit = questionCount >= MAX_QUESTIONS;
   const unitPrice = getUnitPrice(questionCount);
-  const estimatedCost = unitPrice === null ? null : targetCount * unitPrice;
+
+  // 인원 검증 — 되돌리지 않고 "지금 값이 유효한가"만 판정한다.
+  const targetCount = targetCountInput === "" ? null : Number(targetCountInput);
+  const targetError: string | null =
+    targetCount === null ? EMPTY_RESPONDENTS_NOTICE
+    : targetCount < MIN_RESPONDENTS ? MIN_RESPONDENTS_NOTICE
+    : targetCount > MAX_RESPONDENTS ? MAX_RESPONDENTS_NOTICE
+    : null;
+
+  const estimatedCost =
+    unitPrice === null || targetCount === null || targetError !== null
+      ? null
+      : targetCount * unitPrice;
 
   // 새로 추가한 문항으로 스크롤 — 목록 아래 버튼으로 추가했을 때 새 카드가 화면 밖에 생기는 것을 막는다.
   const questionRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -186,7 +211,8 @@ const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps
     questionCount >= 1 &&
     questionCount <= MAX_QUESTIONS &&
     allQuestionsValid &&
-    unitPrice !== null;
+    unitPrice !== null &&
+    targetError === null;
 
   // ── 이탈 경고 ──────────────────────────────────────────────────────────────
   // 임시저장이 없으므로 나가면 작성분이 사라진다. 지금은 경고만 한다(저장 기능은 별건).
@@ -261,17 +287,25 @@ const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">타겟 응답자 수</label>
               <div className="flex items-center gap-3">
                 <Input
-                  type="number"
-                  value={targetCount}
-                  onChange={(e) => setTargetCount(Math.max(10, parseInt(e.target.value) || 10))}
-                  className="w-32 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                  type="text"
+                  inputMode="numeric"
+                  value={targetCountInput}
+                  /* 되돌리지 않는다. 숫자 외 문자만 걸러 문자열 그대로 보관 — 빈칸도 허용. */
+                  onChange={(e) => setTargetCountInput(e.target.value.replace(/[^0-9]/g, ""))}
+                  placeholder={EMPTY_RESPONDENTS_NOTICE}
+                  className={`w-32 focus:border-blue-500 focus:ring-blue-500 ${
+                    targetError ? "border-red-400" : "border-slate-300"
+                  }`}
                 />
                 <span className="text-slate-500 text-sm">명</span>
                 <div className="flex items-center gap-1 ml-auto text-blue-600 text-sm">
                   <Users className="w-4 h-4" />
-                  <span>최소 10명 이상</span>
+                  <span>{MIN_RESPONDENTS}~{MAX_RESPONDENTS}명</span>
                 </div>
               </div>
+              {targetError && (
+                <p className="text-xs text-red-500 mt-1.5">{targetError}</p>
+              )}
             </div>
           </div>
         </section>
@@ -405,6 +439,11 @@ const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps
               <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
               <p className="text-sm text-amber-300">{OVER_LIMIT_NOTICE}</p>
             </div>
+          ) : targetError ? (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+              <p className="text-sm text-amber-300">{targetError}</p>
+            </div>
           ) : (
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
@@ -440,7 +479,9 @@ const ProjectBuilderView = ({ onBack, initialTemplate }: ProjectBuilderViewProps
         <p className="text-center text-xs text-slate-500 mt-2">
           {unitPrice === null
             ? OVER_LIMIT_NOTICE
-            : `예상 비용 ₩${estimatedCost?.toLocaleString()} · 유효 응답 기준 과금 · 미달 시 채운 만큼만 청구`}
+            : targetError
+              ? targetError
+              : `예상 비용 ₩${estimatedCost?.toLocaleString()} · 유효 응답 기준 과금 · 미달 시 채운 만큼만 청구`}
         </p>
       </div>
 
