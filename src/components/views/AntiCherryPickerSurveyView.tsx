@@ -19,6 +19,27 @@ import {
 } from "@/integrations/supabase/types.survey";
 import { recordConsent } from "@/lib/recordConsent";
 import { SURVEY_ETHICS } from "@/lib/consentTexts";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+/**
+ * 「← 돌아가기」 — 서약 화면(구 :609)과 같은 모양으로 모든 단계에 통일한다.
+ * 문구를 "나가기"로 하지 않는 것은 의도다. 성실 응답 서약 뒤에 들어오는 화면이라
+ * 이탈을 부추기는 말을 쓰지 않는다.
+ * floating: 가운데 정렬 화면(문항 준비·보안 검사)에서는 좌상단에 띄운다.
+ */
+const BackLink = ({ onClick, floating = false }: { onClick: () => void; floating?: boolean }) => (
+  <button
+    onClick={onClick}
+    className={`text-slate-400 hover:text-slate-200 flex items-center gap-2 transition-colors ${
+      floating ? "absolute top-6 left-6 z-10" : "mb-8"
+    }`}
+  >
+    ← 돌아가기
+  </button>
+);
 
 interface AntiCherryPickerSurveyViewProps {
   onBack: () => void;
@@ -89,6 +110,33 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
   // C-3: 보상 적립의 실제 결과. complete 화면 문구/버튼이 이 값을 읽어 분기(표시용 배선만 — 적립·잔액 로직 무변경).
   const [claimOutcome, setClaimOutcome] = useState<"success" | "already" | "failed" | null>(null);
   const [claimFailMsg, setClaimFailMsg] = useState<string | null>(null); // B-55: 보상 실패 사유 문구
+
+  // 이탈 경고 — 응답은 100% 도달 시 1회만 저장된다. 그전에 나가면 전부 사라지고 보상도 없다.
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const hasAnswerProgress =
+    answers.length > 0 || currentAnswer.trim().length > 0 || selectedMulti.length > 0;
+  const handleSurveyBack = () => {
+    if (hasAnswerProgress) {
+      setShowExitConfirm(true);
+      return;
+    }
+    onBack();
+  };
+  /** 응답 진행 중인 단계 3곳에서 같은 것을 쓴다(정의는 여기 한 곳). */
+  const exitConfirmDialog = (
+    <AlertDialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>지금 나가면 작성한 답변이 저장되지 않고 보상도 지급되지 않습니다</AlertDialogTitle>
+          <AlertDialogDescription>나가시겠습니까?</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>계속 응답</AlertDialogCancel>
+          <AlertDialogAction onClick={onBack}>나가기</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 
   const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
   const [charCount, setCharCount] = useState(0);
@@ -606,9 +654,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-6">
         <div className="max-w-lg mx-auto">
-          <button onClick={onBack} className="text-slate-400 hover:text-slate-200 mb-8 flex items-center gap-2">
-            ← 돌아가기
-          </button>
+          <BackLink onClick={onBack} />
           <div className="text-center mb-8">
             <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-blue-600 to-blue-800 rounded-full flex items-center justify-center border-2 border-blue-400/30">
               <FileSignature className="w-10 h-10 text-blue-100" />
@@ -729,7 +775,8 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
   // ─── STEP 1.5: Generating Questions ──────────────────────────────────────
   if (currentStep === "generating_questions") {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-6">
+      <div className="relative min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-6">
+        <BackLink onClick={onBack} floating />
         <div className="max-w-lg w-full text-center">
           <div className="relative w-32 h-32 mx-auto mb-8">
             <div className="absolute inset-0 rounded-full border-4 border-blue-500/20 animate-pulse" />
@@ -827,6 +874,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-6">
         <div className="max-w-lg mx-auto">
+          <BackLink onClick={handleSurveyBack} />
           <div className="mb-8">
             <div className="flex items-center justify-between text-sm text-slate-400 mb-2">
               <span>질문 {currentQuestionIndex + 1} / {surveyQuestions.length}</span>
@@ -951,6 +999,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
         </div>
+        {exitConfirmDialog}
       </div>
     );
   }
@@ -961,6 +1010,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-6">
         <div className="max-w-lg mx-auto">
+          <BackLink onClick={handleSurveyBack} />
           <div className="text-center mb-8">
             <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center">
               <Brain className="w-8 h-8 text-white" />
@@ -1013,6 +1063,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
         </div>
+        {exitConfirmDialog}
       </div>
     );
   }
@@ -1021,7 +1072,8 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
   if (currentStep === "security_scan") {
     const CurrentIcon = scanStages[scanStage].icon;
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-6">
+      <div className="relative min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-6">
+        <BackLink onClick={handleSurveyBack} floating />
         <div className="max-w-lg w-full text-center">
           <div className="relative w-40 h-40 mx-auto mb-8">
             <div className="absolute inset-0 rounded-full border-4 border-blue-500/20 animate-pulse" />
@@ -1054,6 +1106,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
           </div>
           <p className="text-slate-600 text-xs mt-6">🔒 금융급 보안 프로토콜 적용 중</p>
         </div>
+        {exitConfirmDialog}
       </div>
     );
   }
