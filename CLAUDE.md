@@ -135,10 +135,17 @@ line-item 제거 지시를 받으면 "제거 후 껍데기가 되는 카드"도 
 1. **GitHub에 커밋 존재** — `git log origin/main`
 2. **Lovable 수신** — 커밋 목록에 보이는가
 3. **실물 서버 반영** — **파일 지문(`index-*.js` 해시) 변경**
-   - Published 실물 URL: `https://veri-node-builder-v2.lovable.app`
-     (지문 대조: `curl -s <URL> | grep -oE 'index-[A-Za-z0-9_-]+\.js'`)
-   - ⚠️ `id-preview-…lovable.app`(에디터 프리뷰)는 lovable.dev 로그인 리다이렉트라 대조 불가.
-     `<uuid>.lovable.app`은 404. 위 Published URL만 실물이다.
+   - **판정 대상: `https://verinode.kr`** (2026-08-17 갱신)
+     지문: `curl -s https://verinode.kr | grep -oE 'index-[A-Za-z0-9_-]+\.js'`
+     내용: `curl -s https://verinode.kr/assets/<번들명> -o /tmp/b.js`
+   - ⚠️ `veri-node-builder-v2.lovable.app`은 **판정에 쓰지 말 것.**
+     2026-08-17 실측: 루트는 200이지만 **`/assets/…`가 HTTP 302를 반환해 번들을 못 받는다.**
+   - ⚠️ `id-preview-…lovable.app`(에디터 프리뷰)는 로그인 리다이렉트라 대조 불가.
+     `<uuid>.lovable.app`은 404.
+   - 최근 실측: **2026-08-17 `index-DX_nUkWf.js` (956,937 bytes)** — 동의 고지 v3 반영 확인
+     (`data_usage/2026-08-15.v3` 1건 / `2026-08-01.v2` 0건)
+   - 🔴 번들을 받았으면 **대상 확인부터** 한다 — `createClient` 등 반드시 있어야 할
+     문자열이 잡히는지 먼저 보고, 그다음 찾으려는 문자열을 센다 (원칙 9).
 
 셋 중 하나라도 어긋나면 **배포 안 된 것**이다.
 ⚠️ **Lovable UI의 "Published" 표시는 ③의 증거가 아니다.**
