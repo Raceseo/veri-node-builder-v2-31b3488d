@@ -42,7 +42,7 @@ const SocialPromiseView = ({ onComplete, displayName = "사용자" }: SocialProm
       setIsSigning(false);
       toast({
         title: "동의를 저장하지 못했습니다",
-        description: "다시 시도해 주세요. 동의가 저장되어야 다음 단계로 넘어갈 수 있습니다.",
+        description: "저장에 실패했습니다. 통신 상태를 확인하고 다시 눌러주세요.",
         variant: "destructive",
       });
       return;
