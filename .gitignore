@@ -32,3 +32,7 @@ dist-ssr
 
 # Supabase CLI 로컬 작업 파일 (프로젝트 ref 등) — 커밋 대상 아님
 supabase/.temp/
+
+# 로컬 전용 — 커밋 금지 (환경변수 백업·AI 도구 설정·Supabase 임시)
+.env.bak_seoulfix
+.claude/
