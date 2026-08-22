@@ -33,7 +33,9 @@ import {
 const BackLink = ({ onClick, floating = false }: { onClick: () => void; floating?: boolean }) => (
   <button
     onClick={onClick}
-    className={`text-slate-400 hover:text-slate-200 flex items-center gap-2 transition-colors ${
+    /* 라이트 전환(2단계): 다크 배경 기준 색(slate-400 → hover slate-200)이라
+       흰 배경에서는 hover 시 오히려 흐려졌다. 밝은 배경 기준으로 뒤집는다. */
+    className={`text-slate-500 hover:text-slate-800 flex items-center gap-2 transition-colors ${
       floating ? "absolute top-6 left-6 z-10" : "mb-8"
     }`}
   >
