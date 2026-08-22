@@ -116,7 +116,7 @@ const SupplierLayout = ({ onSwitchToDemand }: SupplierLayoutProps) => {
               {/* 뒤로가기 버튼 */}
               <button
                 onClick={handleBackToMain}
-                className="flex items-center gap-1.5 text-slate-500 text-sm mb-6 hover:text-slate-300 transition-colors"
+                className="flex items-center gap-1.5 text-slate-500 text-sm mb-6 hover:text-slate-800 transition-colors"
               >
                 ← 돌아가기
               </button>
@@ -246,7 +246,7 @@ const SupplierLayout = ({ onSwitchToDemand }: SupplierLayoutProps) => {
   return (
     <div className="min-h-screen flex flex-col max-w-md mx-auto bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b border-border">
+      <header className="sticky top-0 z-40 bg-background border-b border-border">
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

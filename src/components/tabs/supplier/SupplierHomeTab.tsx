@@ -68,7 +68,7 @@ const SupplierHomeTab = ({
         {/* VN 잔액 카드 — 한 줄 압축. 카드 전체 탭 → 내 지갑 탭 (B-36: 포트폴리오 진입 숨김) */}
         <Card
           onClick={onOpenWallet}
-          className="p-3 bg-gradient-to-br from-primary/5 via-background to-primary/10 border-primary/20 cursor-pointer hover:border-primary/40 transition-colors"
+          className="p-3 bg-slate-50 border-primary/20 cursor-pointer hover:border-primary/40 transition-colors"
         >
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
@@ -99,7 +99,7 @@ const SupplierHomeTab = ({
         >
           <Button
             onClick={onGoToEarn}
-            className="w-full h-14 bg-gradient-to-r from-blue-600 via-blue-500 to-emerald-500 hover:from-blue-700 hover:via-blue-600 hover:to-emerald-600 text-white font-bold text-base shadow-lg shadow-blue-500/30"
+            className="w-full h-14 rounded-md bg-trust hover:bg-trust-dark text-white font-medium text-base shadow-lg shadow-trust/20"
           >
             <Coins className="w-5 h-5 mr-2" />
             설문 참여하고 VN 받기
@@ -111,7 +111,7 @@ const SupplierHomeTab = ({
         <Button
           onClick={() => navigate('/security-engine')}
           variant="outline"
-          className="w-full h-12 font-medium"
+          className="w-full h-12 rounded-md font-medium"
         >
           <Upload className="w-4 h-4 mr-2" />
           데이터 공급하기
@@ -124,7 +124,7 @@ const SupplierHomeTab = ({
             onClick={onStartVerification}
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
                 <Shield className="w-5 h-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
@@ -134,7 +134,7 @@ const SupplierHomeTab = ({
                 <p className="text-sm font-semibold text-foreground">데이터 인증</p>
                 <p className="text-xs text-muted-foreground">설문으로 신뢰점수 올리기</p>
               </div>
-              <ChevronRight className="w-5 h-5 text-slate-400 shrink-0" />
+              <ChevronRight className="w-5 h-5 text-slate-500 shrink-0" />
             </div>
           </Card>
         </motion.div>
