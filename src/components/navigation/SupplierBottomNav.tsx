@@ -37,13 +37,15 @@ const SupplierBottomNav = ({ activeTab, onTabChange }: SupplierBottomNavProps) =
                     ? "text-white"
                     : "text-primary"
                   /* 비선택 「수익 쌓기」만 따로 뺀 이유: 이 탭에는 bg-gold/20 틴트가
-                     깔려 있어(43~53행) 실제 배경이 흰색이 아니라 rgb(254,242,211)이다.
-                     같은 text-muted-foreground 라도 흰 배경 4.85:1 → 틴트 위 4.35:1 로
-                     내려가 AA(4.5:1)를 못 넘긴다. 회색이 노란 면에 눌려 노랗게 보인다.
-                     amber-700 = 4.51:1 로 통과. (amber-600 은 2.86:1 로 미달이다)
-                     🔴 배경 투명도(/20)를 올리면 이 값도 다시 계산해야 한다. */
+                     깔려 있어(아래 강조 블록) 실제 배경이 흰색이 아니라
+                     rgb(254,242,211)이다. 같은 text-muted-foreground 라도
+                     흰 배경 4.85:1 → 틴트 위 4.35:1 로 내려가 AA(4.5:1)를 못 넘긴다.
+                     회색이 노란 면에 눌려 노랗게 보인다.
+                     gold-text 토큰 = 틴트 위 5.01:1. 틴트 농도를 /30 까지 올려도
+                     4.75:1 로 버티도록 토큰 값을 정해뒀다(index.css --gold-text).
+                     hover 색 변화는 두지 않았다 — 모바일 전용 하단바다. */
                   : isHighlight
-                    ? "text-amber-700 hover:text-amber-800"
+                    ? "text-gold-text"
                     : "text-muted-foreground hover:text-foreground"
               )}
             >

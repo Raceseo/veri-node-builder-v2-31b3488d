@@ -77,6 +77,10 @@ export default {
           DEFAULT: "hsl(var(--gold))",
           light: "hsl(var(--gold-light))",
           dark: "hsl(var(--gold-dark))",
+          /* text-gold-text — 밝은 배경 위 금색 글씨·아이콘 전용.
+             밝은 면에 text-gold / text-gold-dark 를 쓰면 AA 미달이다.
+             값과 실측 대비는 index.css 의 --gold-text 주석에 있다. */
+          text: "hsl(var(--gold-text))",
         },
         navy: {
           DEFAULT: "hsl(var(--navy))",
