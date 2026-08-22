@@ -35,10 +35,27 @@
     --accent: 43 96% 56%;
     --accent-foreground: 222 47% 11%;
 
-    /* Shield Gold for coins and rewards */
+    /* Shield Gold for coins and rewards
+       ------------------------------------------------------------------------
+       🔴 --gold 는 **어두운 배경 전용**이다. 밝은 배경에서 글씨로 쓰면
+          1.69:1 로 AA(4.5:1) 미달이다.
+          밝은 면 위 글씨·아이콘은 --gold-text 를 쓸 것.
+          2026-08-22 라이트 전환에서 확인.
+
+       ⚠️ --gold-dark(46%)는 이름이 헷갈리지만 밝은 배경 해법이 아니다.
+          흰 배경 2.14:1 로 역시 미달이다. "진한 금색"이 필요하면 --gold-text 다.
+          --gold-dark 는 어두운 면 위 hover/pressed 용으로만 남겨둔다. */
     --gold: 43 96% 56%;
     --gold-light: 43 96% 66%;
     --gold-dark: 43 96% 46%;
+
+    /* 밝은 배경 위 금색 글씨·아이콘 전용. 색상(43)·채도(96%)는 --gold 그대로
+       두고 명도만 내려, 같은 색 계열로 읽히면서 대비만 확보한다.
+       실측 대비 — 흰 배경 5.59:1 / bg-gold/10 5.29:1 / /20 5.01:1 / /30 4.75:1
+       → 코드에 실재하는 모든 금색 틴트 위에서 AA 통과.
+       ※ amber-700(#b45309)도 후보였으나 bg-gold/30 위 4.27:1 로 떨어지고
+         색상이 26 이라 금색 계열에서 이탈해 채택하지 않았다. */
+    --gold-text: 43 96% 27%;
 
     /* Trust Blue - Royal Blue (신뢰의 블루) */
     --trust: 217 91% 60%;
@@ -82,6 +99,8 @@
     /* Gradients - Trust 기반 */
     --gradient-primary: linear-gradient(135deg, hsl(222 47% 11%), hsl(222 47% 20%));
     --gradient-trust: linear-gradient(135deg, hsl(217 91% 60%), hsl(168 76% 36%));
+    /* 이 토큰은 /dashboard(VeriNodeFinancialDashboard)에서만 사용.
+       TrustScoreHeader는 2026-08-22 라이트 전환으로 이탈. */
     --gradient-secure: linear-gradient(135deg, hsl(222 47% 11%), hsl(217 91% 50%));
     --gradient-verified: linear-gradient(135deg, hsl(160 84% 39%), hsl(168 76% 36%));
     --gradient-success: linear-gradient(135deg, hsl(160 84% 39%), hsl(168 76% 40%));

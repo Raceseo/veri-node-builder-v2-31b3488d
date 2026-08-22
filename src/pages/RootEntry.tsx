@@ -26,15 +26,14 @@ import { ProfileProvider } from '@/contexts/ProfileContext';
 import Index from './Index';
 import IntroView from '@/components/views/IntroView';
 
-/** ProtectedRoute 의 로딩 화면과 동일한 모양 — 기존 / 진입 시 보이던 화면을 유지한다. */
+/** IntroView 직전에 잠깐 스치는 화면이라 랜딩과 같은 톤이어야 한다.
+ *  라이트 전환(1단계): 배경 그라데이션·발광(blur) 제거, 아이콘 w-16 → w-10.
+ *  ⚠️ ProtectedRoute 의 로딩 화면은 아직 다크다(2~3단계 대상) — 지금은 서로 다르다. */
 const AuthLoadingScreen = () => (
-  <div className="min-h-screen bg-gradient-to-b from-navy-dark via-navy to-navy flex items-center justify-center">
+  <div className="min-h-screen bg-white flex items-center justify-center">
     <div className="flex flex-col items-center gap-4">
-      <div className="relative">
-        <Shield className="w-16 h-16 text-trust animate-pulse" />
-        <div className="absolute inset-0 bg-trust/20 blur-xl rounded-full" />
-      </div>
-      <p className="text-white/60 text-sm">로딩 중...</p>
+      <Shield className="w-10 h-10 text-trust animate-pulse" />
+      <p className="text-slate-500 text-sm">로딩 중...</p>
     </div>
   </div>
 );

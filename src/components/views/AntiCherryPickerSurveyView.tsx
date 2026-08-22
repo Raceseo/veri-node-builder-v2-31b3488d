@@ -19,6 +19,41 @@ import {
 } from "@/integrations/supabase/types.survey";
 import { recordConsent } from "@/lib/recordConsent";
 import { SURVEY_ETHICS } from "@/lib/consentTexts";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+/**
+ * 뒤로가기 링크 — 모든 단계에 같은 모양으로 통일한다.
+ * floating: 가운데 정렬 화면(문항 준비·보안 검사)에서는 좌상단에 띄운다.
+ *
+ * label 은 단계에 따라 다르다 (2026-08-22 정정):
+ *   · 답이 없는 단계(서약·문항 준비) → 기본값 "← 돌아가기"
+ *   · 답이 있는 단계(응답·교차검증·보안검사) → EXIT_SURVEY_LABEL
+ * 종전에는 전 단계가 "← 돌아가기"였다. 그런데 이 버튼은 **설문 전체 종료**라
+ * 사용자가 "이전 문항으로"로 오해했다 — 동작과 표현이 어긋나 있었다.
+ */
+const BackLink = ({
+  onClick, floating = false, label = "← 돌아가기",
+}: { onClick: () => void; floating?: boolean; label?: string }) => (
+  <button
+    onClick={onClick}
+    /* 라이트 전환(2단계): 다크 배경 기준 색(slate-400 → hover slate-200)이라
+       흰 배경에서는 hover 시 오히려 흐려졌다. 밝은 배경 기준으로 뒤집는다. */
+    className={`text-slate-500 hover:text-slate-800 flex items-center gap-2 transition-colors ${
+      floating ? "absolute top-6 left-6 z-10" : "mb-8"
+    }`}
+  >
+    {label}
+  </button>
+);
+
+/** 답을 이미 입력한 단계에서 쓰는 문구.
+ *  이 버튼은 "이전 문항으로"가 아니라 **설문 전체 종료**다 — 답이 전부 사라진다.
+ *  「돌아가기」로 두면 사용자가 이전 문항 이동으로 오해한다(Ray 지적 2026-08-22).
+ *  ※ 이전 문항 이동 기능은 B-49(응답 수정 불가)를 다시 여는 일이라 별건이다. */
+const EXIT_SURVEY_LABEL = "← 설문 나가기";
 
 interface AntiCherryPickerSurveyViewProps {
   onBack: () => void;
@@ -89,6 +124,33 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
   // C-3: 보상 적립의 실제 결과. complete 화면 문구/버튼이 이 값을 읽어 분기(표시용 배선만 — 적립·잔액 로직 무변경).
   const [claimOutcome, setClaimOutcome] = useState<"success" | "already" | "failed" | null>(null);
   const [claimFailMsg, setClaimFailMsg] = useState<string | null>(null); // B-55: 보상 실패 사유 문구
+
+  // 이탈 경고 — 응답은 100% 도달 시 1회만 저장된다. 그전에 나가면 전부 사라지고 보상도 없다.
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const hasAnswerProgress =
+    answers.length > 0 || currentAnswer.trim().length > 0 || selectedMulti.length > 0;
+  const handleSurveyBack = () => {
+    if (hasAnswerProgress) {
+      setShowExitConfirm(true);
+      return;
+    }
+    onBack();
+  };
+  /** 응답 진행 중인 단계 3곳에서 같은 것을 쓴다(정의는 여기 한 곳). */
+  const exitConfirmDialog = (
+    <AlertDialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>지금 나가면 작성한 답변이 저장되지 않고 보상도 지급되지 않습니다</AlertDialogTitle>
+          <AlertDialogDescription>나가시겠습니까?</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>계속 응답</AlertDialogCancel>
+          <AlertDialogAction onClick={onBack}>나가기</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 
   const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
   const [charCount, setCharCount] = useState(0);
@@ -604,31 +666,29 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
   // ─── STEP 1: Ethics Pledge ────────────────────────────────────────────────
   if (currentStep === "ethics_pledge") {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-6">
+      <div className="min-h-screen bg-slate-50 p-6">
         <div className="max-w-lg mx-auto">
-          <button onClick={onBack} className="text-slate-400 hover:text-slate-200 mb-8 flex items-center gap-2">
-            ← 돌아가기
-          </button>
+          <BackLink onClick={onBack} />
           <div className="text-center mb-8">
-            <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-blue-600 to-blue-800 rounded-full flex items-center justify-center border-2 border-blue-400/30">
+            <div className="w-20 h-20 mx-auto mb-4 bg-blue-600 rounded-full flex items-center justify-center border-2 border-blue-200">
               <FileSignature className="w-10 h-10 text-blue-100" />
             </div>
-            <h1 className="text-2xl font-display font-bold text-slate-100 mb-2">데이터 윤리 서약</h1>
-            <p className="text-slate-400 text-sm">설문 참여 전, 정직한 응답을 약속해주세요</p>
+            <h1 className="text-2xl font-display font-bold text-slate-900 mb-2">데이터 윤리 서약</h1>
+            <p className="text-slate-500 text-sm">설문 참여 전, 정직한 응답을 약속해주세요</p>
           </div>
 
-          <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 mb-6 backdrop-blur">
-            <div className="border-b border-slate-700 pb-4 mb-4">
-              <p className="text-slate-300 text-sm leading-relaxed">
-                본인은 <span className="text-blue-400 font-semibold">VeriNode</span> 플랫폼의 데이터 무결성 원칙을 존중하며,
-                본 설문에 대해 <span className="text-blue-400 font-semibold">진실되고 정확한 응답</span>을 제공할 것을 서약합니다.
+          <div className="bg-white border border-slate-200 rounded-md p-6 mb-6">
+            <div className="border-b border-slate-200 pb-4 mb-4">
+              <p className="text-slate-600 text-sm leading-relaxed">
+                본인은 <span className="text-blue-600 font-semibold">VeriNode</span> 플랫폼의 데이터 무결성 원칙을 존중하며,
+                본 설문에 대해 <span className="text-blue-600 font-semibold">진실되고 정확한 응답</span>을 제공할 것을 서약합니다.
               </p>
             </div>
             <div className="space-y-3 mb-6">
               {SURVEY_ETHICS.items.map((item, idx) => (
                 <div key={idx} className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
-                  <span className="text-slate-300 text-sm">{item}</span>
+                  <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+                  <span className="text-slate-600 text-sm">{item}</span>
                 </div>
               ))}
             </div>
@@ -637,11 +697,11 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
                 구간F-1(E): DB 설문 모드는 마이데이터 자동완성을 쓰지 않으므로 이 박스(헤더 포함) 전체를 숨김.
                 헤더 "연동 데이터 기반 설문이 생성됩니다"·"보상 5배" 모두 DB 설문엔 거짓이라 통째로 제외. */}
             {!isDbSurveyMode && (
-            <div className={`rounded-xl p-4 border mb-4 ${isFullyLinked ? "bg-green-500/5 border-green-500/30" : "bg-slate-900/50 border-blue-500/20"}`}>
+            <div className={`rounded-md p-4 border mb-4 ${isFullyLinked ? "bg-green-50 border-green-200" : "bg-white border-blue-200"}`}>
               <div className="flex items-center gap-2 mb-3">
                 {isFullyLinked
-                  ? <><Zap className="w-4 h-4 text-green-400" /><span className="text-sm text-green-400 font-medium">마이데이터 연동 완료 — 자동 완성됩니다 🎉</span></>
-                  : <><Database className="w-4 h-4 text-blue-400" /><span className="text-sm text-blue-400 font-medium">연동 데이터 기반 설문이 생성됩니다</span></>
+                  ? <><Zap className="w-4 h-4 text-green-600" /><span className="text-sm text-green-600 font-medium">마이데이터 연동 완료 — 자동 완성됩니다 🎉</span></>
+                  : <><Database className="w-4 h-4 text-blue-600" /><span className="text-sm text-blue-600 font-medium">연동 데이터 기반 설문이 생성됩니다</span></>
                 }
               </div>
               {isLoadingLinkedData ? (
@@ -653,19 +713,19 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
                 <div className="space-y-2">
                   {linkedData?.financial.map((f, idx) => (
                     <div key={idx} className="flex items-center gap-2 text-sm">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-green-400" />
-                      <span className="text-slate-300">{f.name}</span>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                      <span className="text-slate-600">{f.name}</span>
                       <span className="text-slate-500 text-xs">({f.type})</span>
                     </div>
                   ))}
                   {linkedData?.government.map((g, idx) => (
                     <div key={idx} className="flex items-center gap-2 text-sm">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-green-400" />
-                      <span className="text-slate-300">{g.name}</span>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                      <span className="text-slate-600">{g.name}</span>
                       <span className="text-slate-500 text-xs">({g.type})</span>
                     </div>
                   ))}
-                  <p className="text-green-400/70 text-xs mt-2 pt-2 border-t border-green-500/20">
+                  <p className="text-green-600/70 text-xs mt-2 pt-2 border-t border-green-200">
                     ✅ 타이핑 입력 없이 자동으로 설문이 완성됩니다.
                   </p>
                 </div>
@@ -673,16 +733,16 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
                 // 연동 없음 상태
                 <div>
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="flex items-center gap-2 text-slate-400">
+                    <div className="flex items-center gap-2 text-slate-500">
                       <CreditCard className="w-3.5 h-3.5" />
                       <span>금융 데이터: {linkedDataCount.financial}개 기관</span>
                     </div>
-                    <div className="flex items-center gap-2 text-slate-400">
+                    <div className="flex items-center gap-2 text-slate-500">
                       <Building2 className="w-3.5 h-3.5" />
                       <span>정부 데이터: {linkedDataCount.government}개 기관</span>
                     </div>
                   </div>
-                  <p className="text-amber-400 text-xs mt-2">
+                  <p className="text-amber-600 text-xs mt-2">
                     직접 입력 방식으로 진행합니다.
                   </p>
                 </div>
@@ -690,13 +750,13 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
             </div>
             )}
 
-            <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-600">
-              <label className="block text-sm text-slate-400 mb-2">서약자 이름 (정자로 기입)</label>
+            <div className="bg-white rounded-md p-4 border border-slate-200">
+              <label className="block text-sm text-slate-500 mb-2">서약자 이름 (정자로 기입)</label>
               <Input
                 value={pledgeName}
                 onChange={(e) => setPledgeName(e.target.value)}
                 placeholder="홍길동"
-                className="bg-slate-800 border-slate-600 text-slate-100 text-center text-lg font-semibold tracking-widest placeholder:text-slate-500"
+                className="bg-white border-slate-200 text-slate-900 text-center text-lg font-semibold tracking-widest placeholder:text-slate-500"
               />
               <p className="text-xs text-slate-500 mt-2 text-center">* 본인 이름을 또박또박 정자로 입력해주세요</p>
             </div>
@@ -710,8 +770,13 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
           <Button
             onClick={handlePledgeSubmit}
             disabled={pledgeName.length < 2 || isLoadingLinkedData}
-            className="w-full h-14 text-white font-semibold text-base"
-            style={{ background: isFullyLinked ? "linear-gradient(135deg, #22C55E, #16a34a)" : "linear-gradient(135deg, #3182F6, #1a6fd4)" }}
+            /* 라이트 전환(2단계): inline 그라데이션 → 단색. TDS fill variant 기준.
+               🔙 되돌리려면 style={{ background: isFullyLinked
+                  ? "linear-gradient(135deg, #22C55E, #16a34a)"
+                  : "linear-gradient(135deg, #3182F6, #1a6fd4)" }} */
+            className={`w-full h-14 rounded-md text-white font-medium text-base ${
+              isFullyLinked ? "bg-green-600 hover:bg-green-700" : "bg-trust hover:bg-trust-dark"
+            }`}
           >
             {isLoadingLinkedData ? (
               <><Loader2 className="w-5 h-5 mr-2 animate-spin" />데이터 확인 중...</>
@@ -729,20 +794,21 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
   // ─── STEP 1.5: Generating Questions ──────────────────────────────────────
   if (currentStep === "generating_questions") {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-6">
+      <div className="relative min-h-screen bg-slate-50 flex items-center justify-center p-6">
+        <BackLink onClick={onBack} floating />
         <div className="max-w-lg w-full text-center">
           <div className="relative w-32 h-32 mx-auto mb-8">
-            <div className="absolute inset-0 rounded-full border-4 border-blue-500/20 animate-pulse" />
+            <div className="absolute inset-0 rounded-full border-4 border-blue-200 animate-pulse" />
             <div className="absolute inset-2 rounded-full border-2 border-transparent border-t-blue-500 border-r-cyan-400 animate-spin" style={{ animationDuration: '2s' }} />
             <div className="absolute inset-4 rounded-full border-2 border-transparent border-b-indigo-500 border-l-purple-400 animate-spin" style={{ animationDuration: '3s', animationDirection: 'reverse' }} />
-            <div className="absolute inset-6 rounded-full bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center">
+            <div className="absolute inset-6 rounded-full bg-blue-600 flex items-center justify-center">
               <Brain className="w-10 h-10 text-white animate-pulse" />
             </div>
           </div>
-          <h2 className="text-xl font-bold text-slate-100 mb-2">
+          <h2 className="text-xl font-bold text-slate-900 mb-2">
             {isFullyLinked ? "🔗 연동 데이터 자동 완성 중..." : "🤖 AI가 맞춤 질문을 생성하고 있습니다"}
           </h2>
-          <p className="text-blue-400 font-mono text-sm animate-pulse mb-6">
+          <p className="text-blue-600 font-mono text-sm animate-pulse mb-6">
             {generationStage || "초기화 중..."}
           </p>
           <div className="mb-8">
@@ -750,51 +816,51 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
               <span>{isFullyLinked ? "자동 완성 중" : "질문 생성 중"}</span>
               <span>{Math.round(generationProgress)}%</span>
             </div>
-            <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 transition-all duration-300" style={{ width: `${generationProgress}%` }} />
+            <div className="h-2 bg-white rounded-full overflow-hidden">
+              <div className="h-full bg-blue-600 transition-all duration-300" style={{ width: `${generationProgress}%` }} />
             </div>
           </div>
           {/* ✅ 연동 완료 시 자동 완성 내용 표시 */}
           {isFullyLinked ? (
-            <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-4 text-left">
-              <p className="text-xs text-green-400 mb-3 font-medium">✅ 자동 완성되는 데이터:</p>
+            <div className="bg-green-50 border border-green-200 rounded-md p-4 text-left">
+              <p className="text-xs text-green-600 mb-3 font-medium">✅ 자동 완성되는 데이터:</p>
               <div className="space-y-2">
                 {linkedData?.financial.map((f, idx) => (
                   <div key={idx} className="flex items-center gap-2 text-sm">
-                    <CreditCard className="w-4 h-4 text-blue-400" />
-                    <span className="text-slate-300">{f.name}</span>
+                    <CreditCard className="w-4 h-4 text-blue-600" />
+                    <span className="text-slate-600">{f.name}</span>
                     <span className="text-slate-500 text-xs">({f.type})</span>
                   </div>
                 ))}
                 {linkedData?.government.map((g, idx) => (
                   <div key={idx} className="flex items-center gap-2 text-sm">
-                    <Building2 className="w-4 h-4 text-green-400" />
-                    <span className="text-slate-300">{g.name}</span>
+                    <Building2 className="w-4 h-4 text-green-600" />
+                    <span className="text-slate-600">{g.name}</span>
                   </div>
                 ))}
               </div>
-              <p className="text-green-400/60 text-xs mt-3">타이핑 없이 바로 보안 검증으로 이동합니다 🚀</p>
+              <p className="text-green-600/60 text-xs mt-3">타이핑 없이 바로 보안 검증으로 이동합니다 🚀</p>
             </div>
           ) : (
-            <div className="bg-slate-800/30 border border-slate-700 rounded-xl p-4 text-left">
+            <div className="bg-slate-50 border border-slate-200 rounded-md p-4 text-left">
               <p className="text-xs text-slate-500 mb-3">분석 중인 연동 데이터:</p>
               <div className="space-y-2">
                 {linkedData?.financial.map((f, idx) => (
                   <div key={`fin-${idx}`} className="flex items-center gap-2 text-sm">
-                    <CreditCard className="w-4 h-4 text-blue-400" />
-                    <span className="text-slate-300">{f.name}</span>
+                    <CreditCard className="w-4 h-4 text-blue-600" />
+                    <span className="text-slate-600">{f.name}</span>
                   </div>
                 ))}
                 {linkedData?.transactionCategories.length ? (
                   <div className="flex items-center gap-2 text-sm">
-                    <Activity className="w-4 h-4 text-amber-400" />
-                    <span className="text-slate-300">주요 거래: {linkedData.transactionCategories.slice(0, 3).join(', ')}</span>
+                    <Activity className="w-4 h-4 text-amber-600" />
+                    <span className="text-slate-600">주요 거래: {linkedData.transactionCategories.slice(0, 3).join(', ')}</span>
                   </div>
                 ) : null}
               </div>
             </div>
           )}
-          <p className="text-slate-600 text-xs mt-6">🔒 연동된 데이터만 분석에 사용됩니다</p>
+          <p className="text-slate-400 text-xs mt-6">🔒 연동된 데이터만 분석에 사용됩니다</p>
         </div>
       </div>
     );
@@ -805,8 +871,8 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
     const currentQ = surveyQuestions[currentQuestionIndex];
     if (!currentQ) {
       return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
         </div>
       );
     }
@@ -825,26 +891,27 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
         ? selectedMulti.length > 0
         : currentAnswer.trim().length >= 1;
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-6">
+      <div className="min-h-screen bg-slate-50 p-6">
         <div className="max-w-lg mx-auto">
+          <BackLink onClick={handleSurveyBack} label={EXIT_SURVEY_LABEL} />
           <div className="mb-8">
-            <div className="flex items-center justify-between text-sm text-slate-400 mb-2">
+            <div className="flex items-center justify-between text-sm text-slate-500 mb-2">
               <span>질문 {currentQuestionIndex + 1} / {surveyQuestions.length}</span>
               <span className="flex items-center gap-1">
-                <Shield className="w-4 h-4 text-blue-500" />입력 모니터링 중
+                <Shield className="w-4 h-4 text-blue-600" />입력 모니터링 중
               </span>
             </div>
-            <Progress value={(currentQuestionIndex + 1) / surveyQuestions.length * 100} className="h-2 bg-slate-700" />
+            <Progress value={(currentQuestionIndex + 1) / surveyQuestions.length * 100} className="h-2 bg-slate-100" />
           </div>
-          <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 mb-6 backdrop-blur">
+          <div className="bg-white border border-slate-200 rounded-md p-6 mb-6">
             <div className="flex items-start gap-4 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-blue-600/20 flex items-center justify-center text-blue-400 font-bold shrink-0">
+              <div className="w-10 h-10 rounded-md bg-blue-50 flex items-center justify-center text-blue-600 font-semibold shrink-0">
                 Q{currentQ.id}
               </div>
               <div className="flex-1">
-                <p className="text-lg text-slate-100 font-medium leading-relaxed whitespace-pre-line">{currentQ.text}</p>
+                <p className="text-lg text-slate-900 font-medium leading-relaxed whitespace-pre-line">{currentQ.text}</p>
                 {currentQ.targetSource && currentQ.type !== 'trap' && (
-                  <p className="text-xs text-blue-400 mt-2">📊 {currentQ.targetSource} 연동 데이터 기반 질문</p>
+                  <p className="text-xs text-blue-600 mt-2">📊 {currentQ.targetSource} 연동 데이터 기반 질문</p>
                 )}
               </div>
             </div>
@@ -864,19 +931,19 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
                           setCurrentAnswer(opt);
                         }
                       }}
-                      className={`w-full flex items-center gap-3 text-left px-4 py-3 rounded-xl border transition-colors ${
+                      className={`w-full flex items-center gap-3 text-left px-4 py-3 rounded-md border transition-colors ${
                         selected
-                          ? "bg-blue-600/20 border-blue-500 text-slate-100"
-                          : "bg-slate-900/50 border-slate-600 text-slate-200 hover:border-slate-500"
+                          ? "bg-blue-50 border-blue-500 text-slate-900"
+                          : "bg-white border-slate-200 text-slate-800 hover:border-slate-300"
                       }`}
                     >
                       <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
-                        selected ? "bg-blue-500 text-white" : "bg-slate-700 text-slate-300"
+                        selected ? "bg-blue-500 text-white" : "bg-slate-100 text-slate-600"
                       }`}>
                         {idx + 1}
                       </span>
                       <span className="flex-1">{opt}</span>
-                      {selected && <CheckCircle2 className="w-5 h-5 text-blue-400 shrink-0" />}
+                      {selected && <CheckCircle2 className="w-5 h-5 text-blue-600 shrink-0" />}
                     </button>
                   );
                 })}
@@ -895,10 +962,10 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
                         key={val}
                         type="button"
                         onClick={() => setCurrentAnswer(val)}
-                        className={`flex-1 flex items-center justify-center py-4 rounded-xl border text-lg font-semibold transition-colors ${
+                        className={`flex-1 flex items-center justify-center py-4 rounded-md border text-lg font-semibold transition-colors ${
                           selected
-                            ? "bg-blue-600/20 border-blue-500 text-slate-100"
-                            : "bg-slate-900/50 border-slate-600 text-slate-200 hover:border-slate-500"
+                            ? "bg-blue-50 border-blue-500 text-slate-900"
+                            : "bg-white border-slate-200 text-slate-800 hover:border-slate-300"
                         }`}
                       >
                         {val}
@@ -918,7 +985,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
                   value={currentAnswer}
                   onChange={(e) => handleAnswerChange(e.target.value)}
                   placeholder="경험에 기반한 솔직한 답변을 작성해주세요..."
-                  className="bg-slate-900/50 border-slate-600 text-slate-100 min-h-[150px] placeholder:text-slate-500"
+                  className="bg-white border-slate-200 text-slate-900 min-h-[150px] placeholder:text-slate-500"
                   onPaste={(e) => {
                     const text = e.clipboardData.getData('text');
                     if (text.length >= 100) {
@@ -935,15 +1002,15 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
             )}
           </div>
           {!isChoice && !isScale && (
-            <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg mb-6">
-              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
-              <span className="text-xs text-amber-400">입력 속도와 패턴이 실시간으로 기록됩니다.</span>
+            <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg mb-6">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+              <span className="text-xs text-amber-600">입력 속도와 패턴이 실시간으로 기록됩니다.</span>
             </div>
           )}
           <Button
             onClick={handleNextQuestion}
             disabled={!canProceed}
-            className="w-full h-14 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-semibold"
+            className="w-full h-14 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-medium"
           >
             {currentQuestionIndex < surveyQuestions.length - 1
               ? "다음 질문"
@@ -951,6 +1018,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
         </div>
+        {exitConfirmDialog}
       </div>
     );
   }
@@ -959,37 +1027,38 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
   if (currentStep === "cross_verify") {
     const currentCrossVerify = answers[crossVerifyIndex];
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-6">
+      <div className="min-h-screen bg-slate-50 p-6">
         <div className="max-w-lg mx-auto">
+          <BackLink onClick={handleSurveyBack} label={EXIT_SURVEY_LABEL} />
           <div className="text-center mb-8">
-            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-amber-500 rounded-full flex items-center justify-center">
               <Brain className="w-8 h-8 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-slate-100 mb-2">교차 검증</h2>
-            <p className="text-slate-400 text-sm">이전 답변의 일관성을 확인합니다</p>
+            <h2 className="text-xl font-bold text-slate-900 mb-2">교차 검증</h2>
+            <p className="text-slate-500 text-sm">이전 답변의 일관성을 확인합니다</p>
           </div>
-          <div className="flex items-center justify-between text-sm text-slate-400 mb-4">
+          <div className="flex items-center justify-between text-sm text-slate-500 mb-4">
             <span>검증 {crossVerifyIndex + 1} / {answers.length}</span>
           </div>
-          <Progress value={(crossVerifyIndex + 1) / answers.length * 100} className="h-2 bg-slate-700 mb-6" />
-          <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-4 mb-4">
+          <Progress value={(crossVerifyIndex + 1) / answers.length * 100} className="h-2 bg-slate-100 mb-6" />
+          <div className="bg-slate-50 border border-slate-200/50 rounded-md p-4 mb-4">
             <div className="text-xs text-slate-500 mb-2">당신의 이전 답변:</div>
-            <p className="text-slate-300 text-sm italic">"{currentCrossVerify?.answer.slice(0, 100)}..."</p>
+            <p className="text-slate-600 text-sm italic">"{currentCrossVerify?.answer.slice(0, 100)}..."</p>
           </div>
-          <div className="bg-slate-800/50 border border-amber-500/30 rounded-2xl p-6 mb-6 backdrop-blur">
+          <div className="bg-white border border-amber-200 rounded-md p-6 mb-6">
             <div className="flex items-start gap-3 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                <Eye className="w-4 h-4 text-amber-400" />
+              <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
+                <Eye className="w-4 h-4 text-amber-600" />
               </div>
-              <p className="text-slate-100 font-medium">
+              <p className="text-slate-900 font-medium">
                 위 답변에서 언급한 내용을 더 구체적으로 설명해주세요.
                 <br />
-                <span className="text-sm text-slate-400 mt-1 block">(예: 브랜드명, 가격대, 구매 장소, 사용 기간 등)</span>
+                <span className="text-sm text-slate-500 mt-1 block">(예: 브랜드명, 가격대, 구매 장소, 사용 기간 등)</span>
               </p>
             </div>
             <Textarea
               placeholder="구체적인 세부 정보를 입력해주세요..."
-              className="bg-slate-900/50 border-slate-600 text-slate-100 min-h-[120px] placeholder:text-slate-500"
+              className="bg-white border-slate-200 text-slate-900 min-h-[120px] placeholder:text-slate-500"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && e.ctrlKey) {
                   const target = e.target as HTMLTextAreaElement;
@@ -1007,12 +1076,13 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
                 toast({ title: "답변을 입력해주세요", description: "최소 10자 이상 입력해주세요.", variant: "destructive" });
               }
             }}
-            className="w-full h-14 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-semibold"
+            className="w-full h-14 rounded-md bg-amber-500 hover:bg-amber-600 text-white font-medium"
           >
             {crossVerifyIndex < answers.length - 1 ? "다음 검증" : "검증 완료"}
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
         </div>
+        {exitConfirmDialog}
       </div>
     );
   }
@@ -1021,39 +1091,41 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
   if (currentStep === "security_scan") {
     const CurrentIcon = scanStages[scanStage].icon;
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-6">
+      <div className="relative min-h-screen bg-slate-50 flex items-center justify-center p-6">
+        <BackLink onClick={handleSurveyBack} floating label={EXIT_SURVEY_LABEL} />
         <div className="max-w-lg w-full text-center">
           <div className="relative w-40 h-40 mx-auto mb-8">
-            <div className="absolute inset-0 rounded-full border-4 border-blue-500/20 animate-pulse" />
+            <div className="absolute inset-0 rounded-full border-4 border-blue-200 animate-pulse" />
             <div className="absolute inset-2 rounded-full border-2 border-transparent border-t-blue-500 border-r-blue-400 animate-spin" style={{ animationDuration: '2s' }} />
             <div className="absolute inset-4 rounded-full border-2 border-transparent border-b-cyan-500 border-l-cyan-400 animate-spin" style={{ animationDuration: '3s', animationDirection: 'reverse' }} />
-            <div className="absolute inset-8 rounded-full bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center">
+            <div className="absolute inset-8 rounded-full bg-blue-600 flex items-center justify-center">
               <CurrentIcon className="w-10 h-10 text-white animate-pulse" />
             </div>
           </div>
           <div className="mb-6">
-            <h2 className="text-xl font-bold text-slate-100 mb-2">보안 분석 진행 중</h2>
-            <p className="text-blue-400 font-mono text-sm animate-pulse">{scanStages[scanStage].text}</p>
+            <h2 className="text-xl font-bold text-slate-900 mb-2">보안 분석 진행 중</h2>
+            <p className="text-blue-600 font-mono text-sm animate-pulse">{scanStages[scanStage].text}</p>
             <p className="text-slate-500 font-mono text-xs mt-1">{scanStages[scanStage].detail}</p>
           </div>
           <div className="mb-8">
             <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
               <span>분석 진행률</span><span>{Math.round(scanProgress)}%</span>
             </div>
-            <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 transition-all duration-100" style={{ width: `${scanProgress}%` }} />
+            <div className="h-2 bg-white rounded-full overflow-hidden">
+              <div className="h-full bg-blue-600 transition-all duration-100" style={{ width: `${scanProgress}%` }} />
             </div>
           </div>
-          <div className="bg-slate-800/30 border border-slate-700 rounded-xl p-4 text-left">
+          <div className="bg-slate-50 border border-slate-200 rounded-md p-4 text-left">
             <div className="grid grid-cols-2 gap-4 text-xs">
-              <div><span className="text-slate-500">서약자</span><p className="text-slate-300 font-medium">{pledgeName}</p></div>
-              <div><span className="text-slate-500">데이터 방식</span><p className={`font-medium ${isFullyLinked ? "text-green-400" : "text-slate-300"}`}>{isFullyLinked ? "마이데이터 연동" : "직접 입력"}</p></div>
-              <div><span className="text-slate-500">응답 수</span><p className="text-slate-300 font-medium">{answers.length}개</p></div>
-              <div><span className="text-slate-500">프로토콜</span><p className="text-green-400 font-medium">ACP v2.0</p></div>
+              <div><span className="text-slate-500">서약자</span><p className="text-slate-600 font-medium">{pledgeName}</p></div>
+              <div><span className="text-slate-500">데이터 방식</span><p className={`font-medium ${isFullyLinked ? "text-green-600" : "text-slate-600"}`}>{isFullyLinked ? "마이데이터 연동" : "직접 입력"}</p></div>
+              <div><span className="text-slate-500">응답 수</span><p className="text-slate-600 font-medium">{answers.length}개</p></div>
+              <div><span className="text-slate-500">프로토콜</span><p className="text-green-600 font-medium">ACP v2.0</p></div>
             </div>
           </div>
-          <p className="text-slate-600 text-xs mt-6">🔒 금융급 보안 프로토콜 적용 중</p>
+          <p className="text-slate-400 text-xs mt-6">🔒 금융급 보안 프로토콜 적용 중</p>
         </div>
+        {exitConfirmDialog}
       </div>
     );
   }
@@ -1062,19 +1134,19 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
   //   closed/없는 설문 딥링크로 진입 시 무한 스피너 대신 이 화면을 보여준다.
   if (currentStep === "unavailable") {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
         <div className="max-w-lg w-full text-center">
-          <div className="w-20 h-20 mx-auto mb-6 bg-slate-700/50 rounded-full flex items-center justify-center border border-slate-600">
-            <AlertTriangle className="w-10 h-10 text-slate-300" />
+          <div className="w-20 h-20 mx-auto mb-6 bg-slate-100 rounded-full flex items-center justify-center border border-slate-200">
+            <AlertTriangle className="w-10 h-10 text-slate-600" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-100 mb-3">참여할 수 없는 설문입니다</h2>
-          <p className="text-slate-400 text-sm leading-relaxed mb-8">
+          <h2 className="text-2xl font-bold text-slate-900 mb-3">참여할 수 없는 설문입니다</h2>
+          <p className="text-slate-500 text-sm leading-relaxed mb-8">
             이미 종료되었거나 존재하지 않는 설문이에요.<br />
             수익 쌓기 탭에서 참여 가능한 설문을 확인해보세요.
           </p>
           <Button
             onClick={onGoToEarn ?? onBack}
-            className="w-full h-14 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-semibold"
+            className="w-full h-14 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-medium"
           >
             수익 쌓기 탭으로
             <ArrowRight className="w-5 h-5 ml-2" />
@@ -1087,35 +1159,35 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
   // ─── STEP 5: Complete ─────────────────────────────────────────────────────
   if (currentStep === "complete") {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
         <div className="max-w-lg w-full text-center">
-          <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center animate-scale-in">
+          <div className="w-24 h-24 mx-auto mb-6 bg-green-600 rounded-full flex items-center justify-center animate-scale-in">
             <ShieldCheck className="w-12 h-12 text-white" />
           </div>
           {/* 구간F-1(C-2): 판정 근거 없는 "무결성/보안 통과" 단정 → 사실 문구로 교체(Ray 승인 후보③ 확정). */}
-          <h2 className="text-2xl font-bold text-slate-100 mb-2">응답 제출 완료</h2>
-          <p className="text-slate-400 mb-2">소중한 응답 감사합니다</p>
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">응답 제출 완료</h2>
+          <p className="text-slate-500 mb-2">소중한 응답 감사합니다</p>
           {/* C-3: 적립 결과(claimOutcome)에 따라 문구 분기. 성공에서만 금액을 노출한다. */}
           {isDbSurveyMode && claimOutcome === "success" && (
-            <p className="text-green-400 text-sm font-semibold mb-6">🎉 설문 참여로 +{(rewardVn ?? 0).toLocaleString()} VN이 적립되었습니다</p>
+            <p className="text-green-600 text-sm font-semibold mb-6">🎉 설문 참여로 +{(rewardVn ?? 0).toLocaleString()} VN이 적립되었습니다</p>
           )}
           {isDbSurveyMode && claimOutcome === "already" && (
-            <p className="text-slate-300 text-sm font-semibold mb-6">이미 지급받은 설문입니다</p>
+            <p className="text-slate-600 text-sm font-semibold mb-6">이미 지급받은 설문입니다</p>
           )}
           {isDbSurveyMode && claimOutcome === "failed" && (
             <div className="mb-6">
-              <p className="text-amber-400 text-sm font-semibold">⚠️ 응답은 저장되었지만 보상 적립이 처리되지 않았습니다</p>
-              <p className="text-slate-400 text-sm mt-1">{claimFailMsg ?? "보상 적립에 실패했습니다. 잠시 후 다시 시도해 주세요"}</p>
+              <p className="text-amber-600 text-sm font-semibold">⚠️ 응답은 저장되었지만 보상 적립이 처리되지 않았습니다</p>
+              <p className="text-slate-500 text-sm mt-1">{claimFailMsg ?? "보상 적립에 실패했습니다. 잠시 후 다시 시도해 주세요"}</p>
             </div>
           )}
           {isFullyLinked && (
-            <p className="text-green-400 text-sm font-semibold mb-6">🎉 마이데이터 연동으로 자동 완성되었습니다</p>
+            <p className="text-green-600 text-sm font-semibold mb-6">🎉 마이데이터 연동으로 자동 완성되었습니다</p>
           )}
           {/* B-47: '데이터 방식(직접 입력)' 박스 제거 — 파란 글씨+어두운 박스라 입력칸으로 오인.
               연동 기능이 첫 출시 제외(B-36 숨김)라 방식 구분 자체가 현재 무의미. */}
           <Button
             onClick={onComplete}
-            className="w-full h-14 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-semibold"
+            className="w-full h-14 rounded-md bg-green-600 hover:bg-green-700 text-white font-medium"
           >
             {/* C-3: DB 설문 모드는 결과별 라벨(금액은 위 안내문에만). */}
             {/* B-29 1단계: 인증 모드 보상은 Ray 확정 2항에 따라 100 VN 고정이다.

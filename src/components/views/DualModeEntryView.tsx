@@ -35,7 +35,7 @@ const DualModeEntryView = ({ onComplete }: DualModeEntryViewProps) => {
         initial={{ opacity: 0, x: -50 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6 }}
-        className="flex-1 min-h-[50vh] md:min-h-0 bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-100 flex flex-col items-center justify-center p-8 relative overflow-hidden cursor-pointer group"
+        className="flex-1 min-h-[50vh] md:min-h-0 bg-slate-50 flex flex-col items-center justify-center p-8 relative overflow-hidden cursor-pointer group"
         onClick={handleSelectIndividual}
       >
         {/* Decorative Elements */}
@@ -47,7 +47,7 @@ const DualModeEntryView = ({ onComplete }: DualModeEntryViewProps) => {
           whileHover={{ scale: 1.02 }}
           transition={{ type: "spring", stiffness: 300 }}
         >
-          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-trust to-trustTeal flex items-center justify-center mx-auto mb-6 shadow-lg shadow-trust/30 group-hover:shadow-xl group-hover:shadow-trust/40 transition-all">
+          <div className="w-24 h-24 rounded-full bg-trust flex items-center justify-center mx-auto mb-6 shadow-lg shadow-trust/30 group-hover:shadow-xl group-hover:shadow-trust/40 transition-all">
             <User className="w-12 h-12 text-white" />
           </div>
 
@@ -63,11 +63,11 @@ const DualModeEntryView = ({ onComplete }: DualModeEntryViewProps) => {
               확인 안 된 것을 다른 말로 바꿔 남기면 같은 문제가 반복되므로,
               구현이 확인되면 그때 다시 넣는다. */}
           <div className="space-y-3 mb-8">
-            <div className="flex items-center gap-3 text-left bg-white/60 backdrop-blur-sm rounded-xl p-3">
+            <div className="flex items-center gap-3 text-left bg-white border border-slate-200 rounded-md p-3">
               <TrendingUp className="w-5 h-5 text-emerald-500" />
               <span className="text-sm text-slate-700">설문 참여로 VN 토큰 적립</span>
             </div>
-            <div className="flex items-center gap-3 text-left bg-white/60 backdrop-blur-sm rounded-xl p-3">
+            <div className="flex items-center gap-3 text-left bg-white border border-slate-200 rounded-md p-3">
               <Shield className="w-5 h-5 text-trust" />
               {/* B-21: "완벽한 데이터 주권 보장" → 검증 1층이 모형이라 "보장" 근거 없음 */}
               <span className="text-sm text-slate-700">동의한 범위만 제공</span>
@@ -75,7 +75,7 @@ const DualModeEntryView = ({ onComplete }: DualModeEntryViewProps) => {
           </div>
 
           <Button
-            className="w-full bg-gradient-to-r from-trust to-trustTeal hover:opacity-90 text-white py-6 rounded-xl text-lg font-semibold shadow-lg shadow-trust/30 group-hover:shadow-xl transition-all"
+            className="w-full bg-trust hover:bg-trust-dark text-white py-6 rounded-md text-lg font-medium shadow-lg shadow-trust/30 group-hover:shadow-xl transition-all"
           >
             개인으로 시작하기
             <ArrowRight className="ml-2 w-5 h-5" />
@@ -88,30 +88,27 @@ const DualModeEntryView = ({ onComplete }: DualModeEntryViewProps) => {
         initial={{ opacity: 0, x: 50 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6, delay: 0.1 }}
-        className="flex-1 min-h-[50vh] md:min-h-0 bg-gradient-to-br from-slate-900 via-navy-dark to-slate-950 flex flex-col items-center justify-center p-8 relative overflow-hidden cursor-pointer group"
+        className="flex-1 min-h-[50vh] md:min-h-0 bg-white flex flex-col items-center justify-center p-8 relative overflow-hidden cursor-pointer group"
         onClick={handleSelectEnterprise}
       >
         {/* Decorative Elements */}
-        <div className="absolute top-20 right-10 w-32 h-32 bg-trust/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 left-10 w-40 h-40 bg-amber-500/5 rounded-full blur-3xl" />
-
         <motion.div
           className="relative z-10 text-center max-w-sm"
           whileHover={{ scale: 1.02 }}
           transition={{ type: "spring", stiffness: 300 }}
         >
-          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-black/30 border border-slate-600/50 group-hover:border-trust/50 transition-all">
+          <div className="w-24 h-24 rounded-full bg-slate-700 flex items-center justify-center mx-auto mb-6 shadow-lg border border-slate-300 group-hover:border-trust transition-all">
             <Building2 className="w-12 h-12 text-white" />
           </div>
 
-          <h2 className="text-3xl font-bold text-white mb-4">기업</h2>
-          <p className="text-slate-400 mb-8 leading-relaxed">
+          <h2 className="text-3xl font-bold text-slate-900 mb-4">기업</h2>
+          <p className="text-slate-600 mb-8 leading-relaxed">
             데이터를 구매하고<br/>
             <span className="text-trust font-semibold">비즈니스 통찰</span>을 얻으세요
           </p>
 
           <Button
-            className="w-full bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 text-white py-6 rounded-xl text-lg font-semibold border border-slate-600/50 group-hover:border-trust/50 transition-all"
+            className="w-full bg-slate-700 hover:bg-slate-800 text-white py-6 rounded-md text-lg font-medium border border-slate-300 group-hover:border-trust transition-all"
           >
             기업으로 시작하기
             <ArrowRight className="ml-2 w-5 h-5" />
