@@ -35,11 +35,17 @@ const SupplierEarnTab = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <Card className="p-5 bg-gradient-to-br from-gold/10 via-background to-gold/5 border-gold/30">
+        {/* 라이트 전환(4단계 누락분, 2026-08-22): 금색 그라데이션 → 단색 틴트.
+            그라데이션 제거는 예외 없이 적용한다 — 한 화면만 남기면 다시 눈에 띈다.
+            홈은 파란 배너(TrustScoreHeader bg-blue-50), 수익 쌓기는 노란 배너.
+            탭마다 성격이 다르다는 표시가 되고 처리 방식은 같다. */}
+        <Card className="p-5 bg-amber-50 border border-amber-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center">
-                <Coins className="w-5 h-5 text-gold" />
+              {/* rounded-full → rounded-md: 라운드 척도 통일(KRDS 최댓값 12px).
+                  bg-gold/20 틴트는 유지 — amber-50 위에 얹혀도 아이콘 대비 4.87:1. */}
+              <div className="w-10 h-10 rounded-md bg-gold/20 flex items-center justify-center">
+                <Coins className="w-5 h-5 text-gold-text" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">오늘 적립한 수익</p>
@@ -120,7 +126,9 @@ const SupplierEarnTab = ({
                     </div>
 
                     <div className="text-right">
-                      <p className="text-xl font-bold text-gold">
+                      {/* 흰 카드 위 text-gold 는 1.69:1 로 안 읽힌다.
+                          밝은 면 위 금색은 --gold-text (5.59:1). index.css 참고. */}
+                      <p className="text-xl font-bold text-gold-text">
                         +{survey.reward_vn.toLocaleString()}
                       </p>
                       <p className="text-[10px] text-muted-foreground">VN</p>
@@ -128,7 +136,10 @@ const SupplierEarnTab = ({
                   </div>
 
                   <Button
-                    className="w-full bg-primary hover:bg-primary/90"
+                    /* bg-primary(222 47% 11%)는 거의 검정이라 이 버튼만 톤이 달랐다.
+                       앱의 다른 CTA와 같은 조합으로 통일한다
+                       (예: SupplierHomeTab.tsx:102 bg-trust hover:bg-trust-dark). */
+                    className="w-full bg-trust hover:bg-trust-dark text-white"
                     disabled={survey.claimed}
                     onClick={(e) => {
                       e.stopPropagation();
