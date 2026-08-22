@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Shield, Sparkles, ChevronRight } from "lucide-react";
+import { Shield, ChevronRight } from "lucide-react";
 
 interface IntroViewProps {
   onStart: () => void;
@@ -53,8 +53,10 @@ const IntroView = ({ onStart }: IntroViewProps) => {
         <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">
           VeriNode
         </h1>
-        <p className="text-sm text-trust-light font-medium tracking-widest uppercase">
-          Data Trust Platform
+        {/* tracking-widest·uppercase 제거: 영문 전용 타이포다.
+            한글에 자간을 벌리면 "데 이 터  신 탁  플 랫 폼"이 되어 부제가 안 읽힌다. */}
+        <p className="text-sm text-trust-light font-medium">
+          데이터 신탁 플랫폼
         </p>
       </div>
 
@@ -64,12 +66,17 @@ const IntroView = ({ onStart }: IntroViewProps) => {
       {/* Main Headline */}
       <div className="text-center z-10 animate-fade-in" style={{ animationDelay: '0.9s', animationFillMode: 'both' }}>
         <h2 className="text-2xl font-bold text-white mb-3">
-          당신의 진실에 가치를 매기다
+          내 데이터의 값을 받는 곳
         </h2>
+        {/* 설문 보상(1회성)과 마이데이터 사용료(반복)를 구분해 쓴다.
+            마이데이터는 자격 요건 미충족이라 시점을 약속하지 않는다 — "만들고 있습니다"까지만
+            (구조정의서 §4). "연결만 하면 돈이 생긴다" 류 표현 금지: 지금 연결할 것이 없다. */}
         <p className="text-base text-white/75 leading-relaxed max-w-xs">
-          우리는 거대 IT 기업이 독점하던
+          지금은 설문에 답하면 보상이 쌓입니다.
           <br />
-          <span className="text-trust-light font-medium">데이터 주권</span>을 당신에게 돌려줍니다
+          앞으로는 내 데이터가 쓰일 때마다
+          <br />
+          사용료가 돌아오는 구조를 만들고 있습니다.
         </p>
       </div>
 
@@ -77,7 +84,7 @@ const IntroView = ({ onStart }: IntroViewProps) => {
       <div className="flex flex-wrap justify-center gap-2 mt-8 max-w-sm animate-fade-in" style={{ animationDelay: '1.1s', animationFillMode: 'both' }}>
         {/* B-21: "안전한·투명한·완벽한" 3개 모두 검증되지 않은 수식어였다.
             지킬 수 있는 사실만 남긴다(정의서 §5). */}
-        {['내 데이터 직접 관리', '설문 참여로 보상 적립', '내 정보는 내가 관리'].map((feature, i) => (
+        {['3~4분이면 끝', '답한 만큼 적립', '내 데이터는 내가 주인'].map((feature, i) => (
           <div 
             key={feature}
             className="px-4 py-2 rounded-full bg-trust/10 border border-trust/30 text-white/80 text-sm"
@@ -99,16 +106,13 @@ const IntroView = ({ onStart }: IntroViewProps) => {
         </Button>
       </div>
 
-      {/* Trust Indicators */}
-      <div className="flex items-center gap-6 mt-8 text-white/70 text-sm animate-fade-in" style={{ animationDelay: '1.5s', animationFillMode: 'both' }}>
-        <div className="flex items-center gap-1.5">
-          <Shield className="w-4 h-4 text-trust" />
-          <span>보안 인증</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Sparkles className="w-4 h-4 text-trustTeal" />
-          <span>개인정보 보호</span>
-        </div>
+      {/* 초기 단계 고지 — 종전 "보안 인증"·"개인정보 보호" 배지를 대체한다.
+          정상 서비스는 첫 화면에 "안전해요"를 붙이지 않는다. 강조할수록 의심받는다.
+          한계를 먼저 밝히는 쪽이 신뢰를 만든다. */}
+      <div className="mt-8 max-w-xs text-center animate-fade-in" style={{ animationDelay: '1.5s', animationFillMode: 'both' }}>
+        <p className="text-xs text-white/40 leading-relaxed">
+          지금은 초기 단계입니다. 설문 수가 적어 당장 큰 수익은 어렵습니다.
+        </p>
       </div>
     </div>
   );
