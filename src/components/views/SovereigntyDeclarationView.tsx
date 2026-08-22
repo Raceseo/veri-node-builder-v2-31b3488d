@@ -19,14 +19,14 @@ const SovereigntyDeclarationView = ({ onComplete }: SovereigntyDeclarationViewPr
       //   정의서 §4 3단계로 미구현. 연결할 대상 자체가 없어 지킬 수 없는 약속이었다.
       title: "참여 선택권",
       description: "설문마다 참여 여부를 직접 정합니다.",
-      color: "from-blue-400 to-indigo-500",
+      color: "bg-blue-500",
     },
     {
       icon: Coins,
       emoji: "💰",
       title: "정당한 보상",
       description: "당신의 데이터가 창출하는 가치를 돌려드립니다.",
-      color: "from-amber-400 to-orange-500",
+      color: "bg-amber-500",
     },
     {
       icon: ShieldCheck,
@@ -35,7 +35,7 @@ const SovereigntyDeclarationView = ({ onComplete }: SovereigntyDeclarationViewPr
       //   실제 구조(RLS + 동의 기록)와 일치하도록 제3자 제공으로 범위를 한정한다.
       title: "데이터 보호",
       description: "동의 없이는 제3자에게 제공하지 않습니다.",
-      color: "from-emerald-400 to-teal-500",
+      color: "bg-emerald-500",
     },
   ];
 
@@ -50,7 +50,7 @@ const SovereigntyDeclarationView = ({ onComplete }: SovereigntyDeclarationViewPr
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-[#0a1628] to-slate-950 flex flex-col items-center justify-center px-6 relative overflow-hidden">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 relative overflow-hidden">
       {/* Data particles flowing inward */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {[...Array(40)].map((_, i) => {
@@ -78,10 +78,10 @@ const SovereigntyDeclarationView = ({ onComplete }: SovereigntyDeclarationViewPr
 
       {/* Main headline */}
       <div className="text-center z-10 mb-6 animate-fade-in">
-        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 tracking-tight">
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2 tracking-tight">
           이제 당신의 데이터는
         </h1>
-        <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-300 via-purple-300 to-pink-300 bg-clip-text text-transparent">
+        <h1 className="text-3xl md:text-4xl font-bold text-trust">
           당신의 것입니다
         </h1>
       </div>
@@ -91,19 +91,19 @@ const SovereigntyDeclarationView = ({ onComplete }: SovereigntyDeclarationViewPr
         {promises.map((promise, index) => (
           <div
             key={promise.title}
-            className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 animate-fade-in"
+            className="bg-white border border-slate-200 rounded-md p-4 shadow-sm animate-fade-in"
             style={{ animationDelay: `${0.3 + index * 0.15}s`, animationFillMode: 'both' }}
           >
             <div className="flex items-start gap-4">
               <div className={cn(
-                "w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center shrink-0",
+                "w-12 h-12 rounded-md flex items-center justify-center shrink-0",
                 promise.color
               )}>
                 <span className="text-2xl">{promise.emoji}</span>
               </div>
               <div>
-                <h3 className="text-white font-semibold text-lg mb-1">{promise.title}</h3>
-                <p className="text-slate-400 text-base leading-relaxed">{promise.description}</p>
+                <h3 className="text-slate-900 font-semibold text-lg mb-1">{promise.title}</h3>
+                <p className="text-slate-600 text-base leading-relaxed">{promise.description}</p>
               </div>
             </div>
           </div>
@@ -173,7 +173,7 @@ const SovereigntyDeclarationView = ({ onComplete }: SovereigntyDeclarationViewPr
             
             {/* Award icon in center */}
             <g transform="translate(35, 32)">
-              <Award className="text-amber-400" />
+              <Award className="text-amber-600" />
               <path 
                 d="M15 0 L18 10 L30 10 L20 18 L24 30 L15 22 L6 30 L10 18 L0 10 L12 10 Z" 
                 fill="url(#goldGradient)"
@@ -207,10 +207,10 @@ const SovereigntyDeclarationView = ({ onComplete }: SovereigntyDeclarationViewPr
           disabled={isSigning || isSigned}
           size="xl"
           className={cn(
-            "font-semibold shadow-lg transition-all duration-500 animate-fade-in",
+            "rounded-md font-medium shadow-lg transition-colors duration-200 animate-fade-in",
             isSigned 
-              ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-amber-500/30"
-              : "bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white shadow-indigo-500/30 hover:shadow-indigo-500/50"
+              ? "bg-amber-500 text-white shadow-amber-500/20"
+              : "bg-trust hover:bg-trust-dark text-white shadow-trust/20"
           )}
           style={{ animationDelay: '0.9s', animationFillMode: 'both' }}
         >
@@ -228,7 +228,7 @@ const SovereigntyDeclarationView = ({ onComplete }: SovereigntyDeclarationViewPr
       </div>
 
       {/* Bottom subtle text */}
-      <p className="absolute bottom-8 text-slate-400 text-sm text-center max-w-xs animate-fade-in" style={{ animationDelay: '1.2s', animationFillMode: 'both' }}>
+      <p className="absolute bottom-8 text-slate-500 text-sm text-center max-w-xs animate-fade-in" style={{ animationDelay: '1.2s', animationFillMode: 'both' }}>
         이 선언은 당신의 데이터 주권을 보장하는
         <br />
         VeriNode의 약속입니다

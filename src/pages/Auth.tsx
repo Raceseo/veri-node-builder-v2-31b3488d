@@ -167,7 +167,7 @@ const Auth = () => {
       </div>
 
       {/* Auth Card */}
-      <div className="w-full max-w-sm bg-card rounded-2xl p-6 border border-border shadow-sm">
+      <div className="w-full max-w-sm bg-card rounded-md p-6 border border-border shadow-sm">
         {signupSentTo ? (
           /* §10-2: 인증 대기 화면. 이메일 인증이 켜지면 가입 직후 세션이 없어
              화면이 그대로 멈추므로, 폼을 감추고 다음 행동을 명시한다. */
@@ -183,7 +183,7 @@ const Auth = () => {
               {' '}로 보냈습니다
             </p>
 
-            <div className="w-full text-left text-sm text-muted-foreground bg-muted rounded-xl p-4 space-y-2 border border-border">
+            <div className="w-full text-left text-sm text-muted-foreground bg-muted rounded-md p-4 space-y-2 border border-border">
               <p>메일 속 링크를 눌러야 로그인할 수 있습니다.</p>
               <p>메일이 보이지 않으면 스팸함을 확인해 주세요.</p>
             </div>
@@ -192,7 +192,7 @@ const Auth = () => {
               type="button"
               variant="outline"
               onClick={backToLogin}
-              className="w-full h-12 rounded-xl border-border text-foreground hover:bg-muted"
+              className="w-full h-12 rounded-md border-border text-foreground hover:bg-muted"
             >
               로그인 화면으로
             </Button>
@@ -200,7 +200,7 @@ const Auth = () => {
         ) : (
         <>
         {/* Tab Switch */}
-        <div className="flex mb-6 bg-muted rounded-xl p-1">
+        <div className="flex mb-6 bg-muted rounded-md p-1">
           <button
             onClick={() => setIsLogin(true)}
             className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all ${
@@ -229,7 +229,7 @@ const Auth = () => {
                 <button
                   type="button"
                   onClick={() => setUserType('individual')}
-                  className={`flex items-center gap-2 p-3 rounded-xl border text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 p-3 rounded-md border text-sm font-medium transition-all ${
                     userType === 'individual'
                       ? 'border-[#3182F6] bg-[#3182F6]/5 text-[#3182F6]'
                       : 'border-border text-muted-foreground hover:border-[#3182F6]/50'
@@ -241,7 +241,7 @@ const Auth = () => {
                 <button
                   type="button"
                   onClick={() => setUserType('enterprise')}
-                  className={`flex items-center gap-2 p-3 rounded-xl border text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 p-3 rounded-md border text-sm font-medium transition-all ${
                     userType === 'enterprise'
                       ? 'border-[#3182F6] bg-[#3182F6]/5 text-[#3182F6]'
                       : 'border-border text-muted-foreground hover:border-[#3182F6]/50'
@@ -328,7 +328,7 @@ const Auth = () => {
                 <span className="text-sm text-foreground">[필수] 개인정보 수집·이용에 동의합니다</span>
               </label>
               {/* 수집 항목 상시 노출 (아코디언 접힘·펼침과 무관). 문안 단일 출처 = consentTexts.ts */}
-              <p className="text-[11px] text-muted-foreground pl-6">
+              <p className="text-xs text-muted-foreground pl-6">
                 수집 항목: {DATA_USAGE_NOTICE.collected.join(', ')}
               </p>
               <button
@@ -353,7 +353,7 @@ const Auth = () => {
           <Button
             type="submit"
             disabled={isSubmitting || (!isLogin && !agreedPrivacy)}
-            className="w-full bg-[#3182F6] hover:bg-[#2563EB] text-white font-medium py-6 rounded-xl"
+            className="w-full bg-[#3182F6] hover:bg-[#2563EB] text-white font-medium py-6 rounded-md"
           >
             {isSubmitting ? (
               <span className="flex items-center gap-2">
@@ -376,7 +376,7 @@ const Auth = () => {
                 variant="outline"
                 onClick={handlePasskeyLogin}
                 disabled={!canUsePasskey || isPasskeyLoading}
-                className="w-full h-12 rounded-xl border-border text-foreground hover:bg-muted"
+                className="w-full h-12 rounded-md border-border text-foreground hover:bg-muted"
               >
                 {isPasskeyLoading ? (
                   <span className="flex items-center gap-2"><Fingerprint className="w-5 h-5 animate-pulse" />인증 중...</span>
