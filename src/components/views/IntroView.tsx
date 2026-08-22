@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Shield, ChevronRight } from "lucide-react";
+import { BRAND_TAGLINE } from "@/lib/brandCopy";
 
 interface IntroViewProps {
   onStart: () => void;
@@ -44,9 +45,10 @@ const IntroView = ({ onStart }: IntroViewProps) => {
         </h1>
         {/* tracking-widest·uppercase 제거: 영문 전용 타이포다.
             한글에 자간을 벌리면 "데 이 터  신 탁  플 랫 폼"이 되어 부제가 안 읽힌다. */}
-        {/* trust-light(217 91% 70%)는 밝은 배경에서 대비가 모자란다 → trust-dark(217 91% 45%) */}
+        {/* 부제 문구는 brandCopy.ts 단일 출처. 3곳(랜딩·가입·헤더)이 같이 쓴다.
+            trust-light(217 91% 70%)는 밝은 배경에서 대비가 모자란다 → trust-dark(217 91% 45%) */}
         <p className="text-sm text-trust-dark font-medium">
-          데이터 신탁 플랫폼
+          {BRAND_TAGLINE}
         </p>
       </div>
 
@@ -57,8 +59,11 @@ const IntroView = ({ onStart }: IntroViewProps) => {
 
       {/* Main Headline */}
       <div className="text-center z-10 animate-fade-in" style={{ animationDelay: '0.9s', animationFillMode: 'both' }}>
+        {/* 🔴 "또"가 차별점의 핵심이다. 이 단어를 빼면 오베이·패널나우와 같아진다.
+            (경쟁사는 1회성 보상만 준다 — 반복 지급 구조가 없어 "또"를 쓸 수 없다)
+            "~곳"은 장소 설명이라 동사로 끝내 행동을 부른다. */}
         <h2 className="text-2xl font-bold text-slate-900 mb-3">
-          내 데이터의 값을 받는 곳
+          답하면 벌고, 팔리면 또 법니다
         </h2>
         {/* 설문 보상(1회성)과 마이데이터 사용료(반복)를 구분해 쓴다.
             마이데이터는 자격 요건 미충족이라 시점을 약속하지 않는다 — "만들고 있습니다"까지만
@@ -104,7 +109,11 @@ const IntroView = ({ onStart }: IntroViewProps) => {
 
       {/* 초기 단계 고지 — 종전 "보안 인증"·"개인정보 보호" 배지를 대체한다.
           정상 서비스는 첫 화면에 "안전해요"를 붙이지 않는다. 강조할수록 의심받는다.
-          한계를 먼저 밝히는 쪽이 신뢰를 만든다. */}
+          한계를 먼저 밝히는 쪽이 신뢰를 만든다.
+
+          🔴 절대 지우지 말 것 — 헤드라인 "팔리면 또 법니다"와 **짝**이다.
+             배분 실적이 아직 0건이므로, 이 고백이 없으면 위 문장이 과장이 된다.
+             한쪽만 지우면 균형이 깨진다. */}
       <div className="mt-8 max-w-xs text-center animate-fade-in" style={{ animationDelay: '1.5s', animationFillMode: 'both' }}>
         <p className="text-xs text-slate-500 leading-relaxed">
           지금은 초기 단계입니다. 설문 수가 적어 당장 큰 수익은 어렵습니다.

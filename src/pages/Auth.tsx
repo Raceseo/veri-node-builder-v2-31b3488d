@@ -10,6 +10,7 @@ import { useAuth, UserType } from '@/hooks/useAuth';
 import { usePasskey } from '@/hooks/usePasskey';
 import { z } from 'zod';
 import { DATA_USAGE_NOTICE } from '@/lib/consentTexts';
+import { BRAND_TAGLINE } from '@/lib/brandCopy';
 
 const emailSchema = z.string().email('유효한 이메일 주소를 입력하세요');
 const passwordSchema = z.string().min(6, '비밀번호는 최소 6자 이상이어야 합니다');
@@ -163,9 +164,8 @@ const Auth = () => {
           <div className="absolute inset-0 bg-[#3182F6]/20 blur-xl rounded-full" />
         </div>
         <h1 className="text-3xl font-bold text-foreground tracking-tight">VeriNode</h1>
-        {/* 랜딩(IntroView)과 같은 문구로 통일. 종전 "나의 데이터 주권을 지키다"는
-            추상적이라 3초 안에 이해되지 않는다는 실사용자 지적(2026-08-22)을 받았다. */}
-        <p className="text-muted-foreground text-sm mt-1">데이터 신탁 플랫폼</p>
+        {/* 부제 문구는 brandCopy.ts 단일 출처 — 랜딩·헤더와 같은 값을 쓴다. */}
+        <p className="text-muted-foreground text-sm mt-1">{BRAND_TAGLINE}</p>
       </div>
 
       {/* Auth Card */}
