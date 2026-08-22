@@ -1,3 +1,18 @@
+/**
+ * 🔴 이 화면은 2026-08-22 에 진입점이 차단됐다. 되살리기 전에 반드시 읽을 것.
+ *
+ * mydata-sync 를 호출하지만 연동이 0건이면 analysis 가 비고 **폴백 가짜값**이 뜬다.
+ *   - getChartData(): 식비 32 / 쇼핑 24 / 교통 18 / 통신 14 / 문화생활 12 (고정)
+ *   - getMonthlyTrendData(): baseAmount 폴백 월 250만원 +
+ *     🔴 Math.random() — **새로고침할 때마다 지난달 소비 금액이 바뀐다.**
+ *
+ * 이 화면은 데이터 가치를 계산하지 않는다. 소비 금액 추정치이고 그마저 난수다.
+ * 가치 산정이 필요하면 별도 Edge Function data-valuation 이 있다 — 여기서는 호출하지 않는다.
+ *
+ * 되살릴 때: 폴백을 지우고 "연결된 데이터가 없습니다" 빈 상태로 바꾼다.
+ *
+ * 백로그 B-89. 차단 경위는 QuickMenu.tsx 상단 주석 참조.
+ */
 import { useState, useEffect } from "react";
 import { ArrowLeft, Shield, Sparkles, TrendingUp, Lock, Award, CreditCard, ShoppingBag, Car, Utensils, Smartphone, Plane, Building2, Link2, RefreshCw, Loader2, Calendar, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { Button } from "@/components/ui/button";

@@ -23,9 +23,11 @@ const AntiCherryPickerSurveyView = lazy(() => import("@/components/views/AntiChe
 const DataPortfolioView = lazy(() => import("@/components/views/DataPortfolioView"));
 const VCoreAnonymizationView = lazy(() => import("@/components/views/VCoreAnonymizationView"));
 const PartnerRevenueDashboard = lazy(() => import("@/components/views/PartnerRevenueDashboard"));
-const MyDataUploadView = lazy(() => import("@/components/views/MyDataUploadView"));
-const DataCategoryMonitorView = lazy(() => import("@/components/views/DataCategoryMonitorView"));
-const ConsumptionReportView = lazy(() => import("@/components/views/ConsumptionReportView"));
+// 🔴 2026-08-22 — MyDataUploadView · DataCategoryMonitorView · ConsumptionReportView
+//    lazy import 를 걷어냈다. 세 화면 모두 작동하지 않았고 둘은 거짓을 표시했다.
+//    (가짜 연동 성공 · 실명 기관 제휴 허위 표시 · 없는 자산 850만원 · 난수 리포트)
+//    상세는 QuickMenu.tsx 상단 주석과 백로그 B-86~B-89.
+//    파일은 남아 있으나 이 세 줄이 없으면 번들에 실리지 않는다.
 const RevenueSourceView = lazy(() => import("@/components/views/RevenueSourceView"));
 const UnifiedPortfolioView = lazy(() => import("@/components/views/UnifiedPortfolioView"));
 
@@ -36,9 +38,6 @@ type InternalView =
   | 'dataPortfolio'
   | 'vcoreAnonymization'
   | 'partnerRevenue'
-  | 'myDataUpload'
-  | 'dataCategoryMonitor'
-  | 'consumptionReport'
   | 'revenueSource'
   | 'unifiedPortfolio';
 
@@ -157,24 +156,6 @@ const SupplierLayout = ({ onSwitchToDemand }: SupplierLayoutProps) => {
             <PartnerRevenueDashboard onBack={handleBackToMain} />
           </Suspense>
         );
-      case 'myDataUpload':
-        return (
-          <Suspense fallback={<LoadingSpinner fullScreen={false} />}>
-            <MyDataUploadView onBack={handleBackToMain} />
-          </Suspense>
-        );
-      case 'dataCategoryMonitor':
-        return (
-          <Suspense fallback={<LoadingSpinner fullScreen={false} />}>
-            <DataCategoryMonitorView onBack={handleBackToMain} />
-          </Suspense>
-        );
-      case 'consumptionReport':
-        return (
-          <Suspense fallback={<LoadingSpinner fullScreen={false} />}>
-            <ConsumptionReportView onBack={handleBackToMain} />
-          </Suspense>
-        );
       case 'revenueSource':
         return selectedEarning ? (
           <Suspense fallback={<LoadingSpinner fullScreen={false} />}>
@@ -254,9 +235,6 @@ const SupplierLayout = ({ onSwitchToDemand }: SupplierLayoutProps) => {
                 displayName={displayName}
                 trustScore={trustScore}
                 vnBalance={vnBalance}
-                onOpenMyDataUpload={() => setCurrentView("myDataUpload")}
-                onOpenCategoryMonitor={() => setCurrentView("dataCategoryMonitor")}
-                onOpenConsumptionReport={() => setCurrentView("consumptionReport")}
               />
               <VeriNodeLogo />
             </div>
