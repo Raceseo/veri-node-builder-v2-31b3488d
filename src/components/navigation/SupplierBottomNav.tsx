@@ -32,11 +32,19 @@ const SupplierBottomNav = ({ activeTab, onTabChange }: SupplierBottomNavProps) =
               whileTap={{ scale: 0.95 }}
               className={cn(
                 "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-md transition-all duration-300 min-w-[64px] relative",
-                isActive 
-                  ? isHighlight 
-                    ? "text-white" 
+                isActive
+                  ? isHighlight
+                    ? "text-white"
                     : "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  /* 비선택 「수익 쌓기」만 따로 뺀 이유: 이 탭에는 bg-gold/20 틴트가
+                     깔려 있어(43~53행) 실제 배경이 흰색이 아니라 rgb(254,242,211)이다.
+                     같은 text-muted-foreground 라도 흰 배경 4.85:1 → 틴트 위 4.35:1 로
+                     내려가 AA(4.5:1)를 못 넘긴다. 회색이 노란 면에 눌려 노랗게 보인다.
+                     amber-700 = 4.51:1 로 통과. (amber-600 은 2.86:1 로 미달이다)
+                     🔴 배경 투명도(/20)를 올리면 이 값도 다시 계산해야 한다. */
+                  : isHighlight
+                    ? "text-amber-700 hover:text-amber-800"
+                    : "text-muted-foreground hover:text-foreground"
               )}
             >
               {/* 수익 쌓기 탭 특별 강조 */}
