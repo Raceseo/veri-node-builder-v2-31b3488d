@@ -24,9 +24,9 @@ const DemandLayout = lazy(() => import("@/components/layouts/DemandLayout"));
 const IntroView = lazy(() => import("@/components/views/IntroView"));
 const SovereigntyDeclarationView = lazy(() => import("@/components/views/SovereigntyDeclarationView"));
 const SocialPromiseView = lazy(() => import("@/components/views/SocialPromiseView"));
-const DualModeEntryView = lazy(() => import("@/components/views/DualModeEntryView"));
+// 2026-08-22 — DualModeEntryView lazy import 제거(역할 선택 단계 삭제). 파일은 남아 있다.
 
-type OnboardingStep = 'intro' | 'sovereignty' | 'promise' | 'select-mode' | 'complete';
+type OnboardingStep = 'intro' | 'sovereignty' | 'promise' | 'complete';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -160,26 +160,24 @@ const Index = () => {
   if (onboardingStep === 'promise') {
     return (
       <Suspense fallback={<LoadingSpinner />}>
+        {/* 2026-08-22 — 서약 다음이 곧 온보딩 완료다. 사이에 있던 역할 선택
+            (select-mode / DualModeEntryView)을 걷어냈다 — 아래 주석 참조. */}
         <SocialPromiseView 
           displayName={displayName}
-          onComplete={() => setOnboardingStep('select-mode')} 
+          onComplete={() => completeOnboarding('individual')} 
         />
       </Suspense>
     );
   }
 
-  if (onboardingStep === 'select-mode') {
-    return (
-      <Suspense fallback={<LoadingSpinner />}>
-        <DualModeEntryView 
-          onComplete={async (type) => {
-            setUserMode(type === 'enterprise' ? 'demand' : 'supplier');
-            await completeOnboarding(type);
-          }}
-        />
-      </Suspense>
-    );
-  }
+  /* 2026-08-22 — 온보딩 역할 선택(select-mode) 단계 제거.
+     「기업」을 고르면 setUserMode('demand') 로 실데이터에 연결되지 않은
+     더미 화면(Demand*, B-90)에 착지했다. 신규 가입자가 첫인상으로 가짜를 보고,
+     새로고침하면 /enterprise 로 가 다른 화면이 나오는 상태였다.
+     기업 문은 아직 열지 않았으므로(수요 사다리 ②단계) 선택 자체를 없앴다.
+     선택지가 하나뿐이면 그건 선택이 아니라 클릭 한 번을 더 받는 빈 단계다.
+     → 서약 완료 시 곧바로 completeOnboarding('individual') 한다.
+     Auth.tsx 의 「가입 유형」 선택도 같은 이유로 함께 제거했다. */
 
   // 온보딩 완료 후 - 사용자 모드에 따라 레이아웃 표시
   if (userMode === 'demand') {

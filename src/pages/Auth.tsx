@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Mail, Lock, User, Eye, EyeOff, Fingerprint, Building2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Shield, Mail, Lock, User, Eye, EyeOff, Fingerprint, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, UserType } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { usePasskey } from '@/hooks/usePasskey';
 import { z } from 'zod';
 import { DATA_USAGE_NOTICE } from '@/lib/consentTexts';
@@ -20,7 +20,6 @@ const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [userType, setUserType] = useState<UserType>('individual');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
@@ -117,7 +116,7 @@ const Auth = () => {
           toast({ title: '로그인 성공', description: 'VeriNode에 오신 것을 환영합니다!' });
         }
       } else {
-        const { error } = await signUp(email, password, displayName || undefined, userType, DATA_USAGE_NOTICE.version);
+        const { error } = await signUp(email, password, displayName || undefined, 'individual', DATA_USAGE_NOTICE.version);
         if (error) {
           toast({
             title: '회원가입 실패',
@@ -146,7 +145,6 @@ const Auth = () => {
     setEmail('');
     setPassword('');
     setDisplayName('');
-    setUserType('individual');
     setShowPassword(false);
     setAgreedPrivacy(false);
     setNoticeOpen(false);
@@ -223,54 +221,24 @@ const Auth = () => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* 회원가입 전용: 사용자 유형 선택 */}
-          {!isLogin && (
-            <div className="space-y-2">
-              <Label className="text-foreground">가입 유형</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setUserType('individual')}
-                  className={`flex items-center gap-2 p-3 rounded-md border text-sm font-medium transition-all ${
-                    userType === 'individual'
-                      ? 'border-[#3182F6] bg-[#3182F6]/5 text-[#3182F6]'
-                      : 'border-border text-muted-foreground hover:border-[#3182F6]/50'
-                  }`}
-                >
-                  <User className="w-4 h-4" />
-                  개인 (공급자)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setUserType('enterprise')}
-                  className={`flex items-center gap-2 p-3 rounded-md border text-sm font-medium transition-all ${
-                    userType === 'enterprise'
-                      ? 'border-[#3182F6] bg-[#3182F6]/5 text-[#3182F6]'
-                      : 'border-border text-muted-foreground hover:border-[#3182F6]/50'
-                  }`}
-                >
-                  <Building2 className="w-4 h-4" />
-                  기업 (수요자)
-                </button>
-              </div>
-            </div>
-          )}
+          {/* 2026-08-22 — 「가입 유형」(개인/기업) 선택 블록 제거.
+              기업 문을 아직 열지 않았다(수요 사다리 ②단계, 지금은 ①학술).
+              게다가 이 선택은 이미 무의미했다 — 온보딩 역할 선택이 뒤에서
+              completeOnboarding 으로 user_type 을 덮어써서 뒤엣것이 이겼다.
+              한쪽만 고치면 갈라짐이 남으므로 온보딩 단계와 함께 걷어냈다.
+              가입은 전부 individual 로 고정된다(아래 signUp 인자). */}
 
           {!isLogin && (
             <div className="space-y-2">
               <Label htmlFor="displayName" className="text-foreground">
-                {userType === 'enterprise' ? '기업명' : '이름'} (선택)
+                이름 (선택)
               </Label>
               <div className="relative">
-                {userType === 'enterprise' ? (
-                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                ) : (
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                )}
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   id="displayName"
                   type="text"
-                  placeholder={userType === 'enterprise' ? '주식회사 OOO' : '홍길동'}
+                  placeholder="홍길동"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   className="pl-10 bg-muted border-border text-foreground placeholder:text-muted-foreground focus:border-[#3182F6] focus:ring-[#3182F6]"
