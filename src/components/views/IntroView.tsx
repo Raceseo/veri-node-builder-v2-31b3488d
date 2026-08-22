@@ -110,7 +110,7 @@ const IntroView = ({ onStart }: IntroViewProps) => {
           정상 서비스는 첫 화면에 "안전해요"를 붙이지 않는다. 강조할수록 의심받는다.
           한계를 먼저 밝히는 쪽이 신뢰를 만든다. */}
       <div className="mt-8 max-w-xs text-center animate-fade-in" style={{ animationDelay: '1.5s', animationFillMode: 'both' }}>
-        <p className="text-xs text-white/40 leading-relaxed">
+        <p className="text-xs text-white/60 leading-relaxed">
           지금은 초기 단계입니다. 설문 수가 적어 당장 큰 수익은 어렵습니다.
         </p>
       </div>
