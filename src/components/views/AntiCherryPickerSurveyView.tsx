@@ -25,12 +25,18 @@ import {
 } from "@/components/ui/alert-dialog";
 
 /**
- * 「← 돌아가기」 — 서약 화면(구 :609)과 같은 모양으로 모든 단계에 통일한다.
- * 문구를 "나가기"로 하지 않는 것은 의도다. 성실 응답 서약 뒤에 들어오는 화면이라
- * 이탈을 부추기는 말을 쓰지 않는다.
+ * 뒤로가기 링크 — 모든 단계에 같은 모양으로 통일한다.
  * floating: 가운데 정렬 화면(문항 준비·보안 검사)에서는 좌상단에 띄운다.
+ *
+ * label 은 단계에 따라 다르다 (2026-08-22 정정):
+ *   · 답이 없는 단계(서약·문항 준비) → 기본값 "← 돌아가기"
+ *   · 답이 있는 단계(응답·교차검증·보안검사) → EXIT_SURVEY_LABEL
+ * 종전에는 전 단계가 "← 돌아가기"였다. 그런데 이 버튼은 **설문 전체 종료**라
+ * 사용자가 "이전 문항으로"로 오해했다 — 동작과 표현이 어긋나 있었다.
  */
-const BackLink = ({ onClick, floating = false }: { onClick: () => void; floating?: boolean }) => (
+const BackLink = ({
+  onClick, floating = false, label = "← 돌아가기",
+}: { onClick: () => void; floating?: boolean; label?: string }) => (
   <button
     onClick={onClick}
     /* 라이트 전환(2단계): 다크 배경 기준 색(slate-400 → hover slate-200)이라
@@ -39,9 +45,15 @@ const BackLink = ({ onClick, floating = false }: { onClick: () => void; floating
       floating ? "absolute top-6 left-6 z-10" : "mb-8"
     }`}
   >
-    ← 돌아가기
+    {label}
   </button>
 );
+
+/** 답을 이미 입력한 단계에서 쓰는 문구.
+ *  이 버튼은 "이전 문항으로"가 아니라 **설문 전체 종료**다 — 답이 전부 사라진다.
+ *  「돌아가기」로 두면 사용자가 이전 문항 이동으로 오해한다(Ray 지적 2026-08-22).
+ *  ※ 이전 문항 이동 기능은 B-49(응답 수정 불가)를 다시 여는 일이라 별건이다. */
+const EXIT_SURVEY_LABEL = "← 설문 나가기";
 
 interface AntiCherryPickerSurveyViewProps {
   onBack: () => void;
@@ -881,7 +893,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
     return (
       <div className="min-h-screen bg-slate-50 p-6">
         <div className="max-w-lg mx-auto">
-          <BackLink onClick={handleSurveyBack} />
+          <BackLink onClick={handleSurveyBack} label={EXIT_SURVEY_LABEL} />
           <div className="mb-8">
             <div className="flex items-center justify-between text-sm text-slate-500 mb-2">
               <span>질문 {currentQuestionIndex + 1} / {surveyQuestions.length}</span>
@@ -1017,7 +1029,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
     return (
       <div className="min-h-screen bg-slate-50 p-6">
         <div className="max-w-lg mx-auto">
-          <BackLink onClick={handleSurveyBack} />
+          <BackLink onClick={handleSurveyBack} label={EXIT_SURVEY_LABEL} />
           <div className="text-center mb-8">
             <div className="w-16 h-16 mx-auto mb-4 bg-amber-500 rounded-full flex items-center justify-center">
               <Brain className="w-8 h-8 text-white" />
@@ -1080,7 +1092,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
     const CurrentIcon = scanStages[scanStage].icon;
     return (
       <div className="relative min-h-screen bg-slate-50 flex items-center justify-center p-6">
-        <BackLink onClick={handleSurveyBack} floating />
+        <BackLink onClick={handleSurveyBack} floating label={EXIT_SURVEY_LABEL} />
         <div className="max-w-lg w-full text-center">
           <div className="relative w-40 h-40 mx-auto mb-8">
             <div className="absolute inset-0 rounded-full border-4 border-blue-200 animate-pulse" />
