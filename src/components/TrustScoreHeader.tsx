@@ -31,22 +31,24 @@ const TrustScoreHeader = ({
     }
   }, [score, showCelebration, earnedPoints]);
 
+  /* 라이트 전환(4단계): gold(43 96% 56%)·gold-light(66%)는 밝은 배경에서 대비가
+     2:1 대에 그쳐 읽히지 않는다. 같은 계열의 진한 값으로 내린다. */
   const getLevel = () => {
-    if (percentage >= 80) return { label: "플래티넘", color: "text-gold" };
-    if (percentage >= 60) return { label: "골드", color: "text-gold-light" };
-    if (percentage >= 40) return { label: "실버", color: "text-muted-foreground" };
-    return { label: "브론즈", color: "text-warning" };
+    if (percentage >= 80) return { label: "플래티넘", color: "text-amber-600" };
+    if (percentage >= 60) return { label: "골드", color: "text-amber-600" };
+    if (percentage >= 40) return { label: "실버", color: "text-slate-500" };
+    return { label: "브론즈", color: "text-orange-600" };
   };
 
   const level = getLevel();
 
+  /* 라이트 전환(4단계, 2026-08-22): bg-gradient-secure(진한 네이비→파랑) 이탈.
+     연한 틴트 카드로 간 이유 — 홈의 주 CTA 가 이미 bg-trust 진한 파랑이다.
+     배너까지 진한 색이면 같은 크기의 강조가 둘이 되어 시선이 갈린다.
+     흰색이면 묻히므로 blue-50 틴트 + 테두리로 "강조는 하되 CTA를 이기지 않게" 둔다.
+     ※ --gradient-secure 토큰은 /dashboard 가 계속 쓰므로 건드리지 않았다. */
   return (
-    <div className="relative bg-gradient-secure text-primary-foreground rounded-2xl p-3 shadow-lg shadow-trust overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-15">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-trust/30 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-trustTeal/40 rounded-full blur-2xl" />
-      </div>
+    <div className="relative bg-blue-50 border border-blue-200 text-slate-900 rounded-md p-3 shadow-sm overflow-hidden">
 
       {/* Celebration Effects */}
       {showCelebration && (
@@ -77,24 +79,23 @@ const TrustScoreHeader = ({
       {/* 홈 첫 화면 압축(1줄): 아이콘 · "신뢰 점수" · 실값 0/100 · 등급 · 얇은 진행바.
           면적만 줄이고 실값(점수·등급)은 유지한다. 부제/하단 안내문은 제거. */}
       <div className="relative z-10 flex items-center gap-2.5">
-        <div className="w-9 h-9 rounded-lg bg-trust/20 flex items-center justify-center backdrop-blur-sm border border-trust/30 shrink-0">
-          <Shield className="w-5 h-5 text-trust-light" />
+        {/* backdrop-blur 제거(밝은 배경에서 효과 없음). 아이콘 면만 단색으로 두어
+            배너 안에서 유일한 진한 요소가 되게 한다. */}
+        <div className="w-9 h-9 rounded-md bg-trust flex items-center justify-center shrink-0">
+          <Shield className="w-5 h-5 text-white" />
         </div>
         <span className="text-sm font-bold shrink-0">신뢰 점수</span>
         <div className={`text-2xl font-bold leading-none shrink-0 ${animating ? 'animate-score-up' : ''}`}>
           {displayScore}
-          <span className="text-base text-primary-foreground/60">/{maxScore}</span>
+          <span className="text-base text-slate-500">/{maxScore}</span>
         </div>
         <span className={`text-sm font-medium shrink-0 ${level.color}`}>· {level.label}</span>
 
         {/* 남은 폭을 채우는 얇은 진행바 */}
-        <div className="relative flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden ml-1">
+        <div className="relative flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden ml-1">
           <div
-            className="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out"
-            style={{
-              width: `${percentage}%`,
-              background: 'linear-gradient(90deg, hsl(217 91% 60%), hsl(168 76% 36%))'
-            }}
+            className="absolute inset-y-0 left-0 rounded-full bg-trust transition-all duration-1000 ease-out"
+            style={{ width: `${percentage}%` }}
           />
         </div>
       </div>

@@ -18,7 +18,7 @@ const tabs = [
 
 const SupplierBottomNav = ({ activeTab, onTabChange }: SupplierBottomNavProps) => {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t border-border max-w-md mx-auto safe-area-pb z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border max-w-md mx-auto safe-area-pb z-50">
       <div className="flex items-center justify-around py-2">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -31,7 +31,7 @@ const SupplierBottomNav = ({ activeTab, onTabChange }: SupplierBottomNavProps) =
               onClick={() => onTabChange(tab.id)}
               whileTap={{ scale: 0.95 }}
               className={cn(
-                "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-2xl transition-all duration-300 min-w-[64px] relative",
+                "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-md transition-all duration-300 min-w-[64px] relative",
                 isActive 
                   ? isHighlight 
                     ? "text-white" 
@@ -43,10 +43,10 @@ const SupplierBottomNav = ({ activeTab, onTabChange }: SupplierBottomNavProps) =
               {isHighlight && (
                 <motion.div
                   className={cn(
-                    "absolute inset-0 rounded-2xl -z-10 transition-all duration-300",
+                    "absolute inset-0 rounded-md -z-10 transition-all duration-300",
                     isActive 
-                      ? "bg-gradient-to-r from-gold via-gold-light to-gold shadow-lg shadow-gold/30"
-                      : "bg-gradient-to-r from-gold/20 to-gold-light/20"
+                      ? "bg-gold shadow-lg shadow-gold/20"
+                      : "bg-gold/20"
                   )}
                   layoutId="highlight-bg"
                 />
@@ -54,7 +54,7 @@ const SupplierBottomNav = ({ activeTab, onTabChange }: SupplierBottomNavProps) =
               
               <motion.div 
                 className={cn(
-                  "p-1.5 rounded-xl transition-all duration-200",
+                  "p-1.5 rounded-md transition-all duration-200",
                   isActive && !isHighlight && "bg-primary/10"
                 )}
                 animate={isActive ? { scale: [1, 1.1, 1] } : {}}

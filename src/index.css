@@ -82,6 +82,8 @@
     /* Gradients - Trust 기반 */
     --gradient-primary: linear-gradient(135deg, hsl(222 47% 11%), hsl(222 47% 20%));
     --gradient-trust: linear-gradient(135deg, hsl(217 91% 60%), hsl(168 76% 36%));
+    /* 이 토큰은 /dashboard(VeriNodeFinancialDashboard)에서만 사용.
+       TrustScoreHeader는 2026-08-22 라이트 전환으로 이탈. */
     --gradient-secure: linear-gradient(135deg, hsl(222 47% 11%), hsl(217 91% 50%));
     --gradient-verified: linear-gradient(135deg, hsl(160 84% 39%), hsl(168 76% 36%));
     --gradient-success: linear-gradient(135deg, hsl(160 84% 39%), hsl(168 76% 40%));
