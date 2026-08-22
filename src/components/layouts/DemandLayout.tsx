@@ -1,3 +1,14 @@
+/**
+ * 🔴 **더미 화면. 실데이터 미연결 (B-90).**
+ *    2026-08-22 진입점 차단 — 홈 헤더 「기업 공급자 전환 →」 버튼을 제거했다.
+ *    Index.tsx 가 SupplierLayout 에 onSwitchToDemand 를 넘기지 않는다.
+ *
+ * 수요자 화면 7파일(1,805줄) 전부 `supabase.` 호출 0건이다.
+ * 화면에 보이는 금액·등급·상품·구매내역·리포트가 모두 상수다.
+ * 🔴 되살리기 전 목업 제거 필수 — 첫 의뢰 기업이 자기 것이 아닌 숫자를 보게 된다.
+ * 이 파일의 목업: :52 totalPurchaseAmount = 12850000 (거래 0건인데 ₩12,850,000)
+ *                :53 dataQualityGrade = "S" (·프리미엄 배지)
+ */
 import { useState, useEffect } from "react";
 import DemandBottomNav, { DemandTabType } from "@/components/navigation/DemandBottomNav";
 import DemandMarketTab from "@/components/tabs/demand/DemandMarketTab";

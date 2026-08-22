@@ -40,11 +40,7 @@ type InternalView =
   | 'revenueSource'
   | 'unifiedPortfolio';
 
-interface SupplierLayoutProps {
-  onSwitchToDemand?: () => void;
-}
-
-const SupplierLayout = ({ onSwitchToDemand }: SupplierLayoutProps) => {
+const SupplierLayout = () => {
   const { user } = useAuth();
   const { trustScore, vnBalance, displayName, isVerified } = useProfileContext();
   const [activeTab, setActiveTab] = useState<SupplierTabType>("home");
@@ -79,16 +75,6 @@ const SupplierLayout = ({ onSwitchToDemand }: SupplierLayoutProps) => {
   const handleOpenRevenueSource = (earning: any) => {
     setSelectedEarning(earning);
     setCurrentView('revenueSource');
-  };
-
-  const handleSwitchToDemand = () => {
-    toast.info("기업 모드로 전환 중...", {
-      duration: 1500,
-      icon: "🔄",
-    });
-    setTimeout(() => {
-      onSwitchToDemand?.();
-    }, 1500);
   };
 
   // 2026-08-22 — DataLinkPromptStep(마이데이터 연동 유도)을 거치지 않고 설문으로 직행한다.
@@ -217,15 +203,10 @@ const SupplierLayout = ({ onSwitchToDemand }: SupplierLayoutProps) => {
               <VeriNodeLogo />
             </div>
             <div className="flex items-center gap-3">
-              {onSwitchToDemand && (
-                <button
-                  onClick={handleSwitchToDemand}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-navy/10 hover:bg-navy/20 rounded-full text-xs font-medium text-navy transition-all"
-                >
-                  <span>기업 공급자 전환</span>
-                  <span className="text-[10px]">→</span>
-                </button>
-              )}
+              {/* 2026-08-22 — 「기업 공급자 전환 →」 버튼 제거. 도착하는 수요자 화면
+                  7개가 실데이터에 연결되지 않은 더미다(총 구매액·품질등급·상품목록·
+                  구매내역·정산비율 전부 상수, supabase 호출 0건). 백로그 B-90·B-93.
+                  Index.tsx 가 onSwitchToDemand 를 넘기지 않아 이 자리는 비어 있다. */}
               <NotificationCenter />
             </div>
           </div>

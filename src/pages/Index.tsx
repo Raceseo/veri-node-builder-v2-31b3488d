@@ -211,11 +211,14 @@ const Index = () => {
   }
 
   // 기본: 공급자(개인) 모드
+  // 2026-08-22 — onSwitchToDemand 를 넘기지 않는다. 홈 헤더의 「기업 공급자 전환 →」
+  //   버튼이 이 prop 유무로 렌더되므로(SupplierLayout:220) 이 한 줄이 진입점을 끊는다.
+  //   도착하는 Demand* 화면 7개는 실데이터에 연결되지 않은 더미다(B-90).
+  //   ⚠️ 위 userMode === 'demand' 분기와 :57 의 user_type === 'enterprise' 착지는
+  //     그대로 남겨뒀다 — 실제 기업 계정 경로까지 막는 것은 범위 밖이다.
   return (
     <Suspense fallback={<LoadingSpinner />}>
-      <SupplierLayout 
-        onSwitchToDemand={() => setUserMode('demand')}
-      />
+      <SupplierLayout />
     </Suspense>
   );
 };

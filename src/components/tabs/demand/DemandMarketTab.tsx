@@ -1,3 +1,25 @@
+/**
+ * 🔴 **더미 화면. 실데이터 미연결 (B-90).**
+ *    2026-08-22 진입점 차단 — 홈 헤더 「기업 공급자 전환 →」 버튼을 제거했다.
+ *    Index.tsx 가 SupplierLayout 에 onSwitchToDemand 를 넘기지 않는다.
+ *
+ * 수요자 화면 7파일(1,805줄) 전부 `supabase.` 호출 0건이다.
+ * 화면에 보이는 금액·등급·상품·구매내역·리포트가 모두 상수다.
+ * 🔴 되살리기 전 목업 제거 필수 — 첫 의뢰 기업이 자기 것이 아닌 숫자를 보게 된다.
+ * 이 파일의 목업: :31 mockProducts — 「2024 소비 성향 리포트」 ₩2,500,000 / 1,500명 /
+ *                S등급 / AI검증·크로스체크 태그 등 3종.
+ *
+ * 🔴 「Quick Buy」(:74 handleQuickBuy)는 **실제 결제를 시도하지 않는다.**
+ *    2초 setTimeout 뒤 "결제 완료! 데이터 다운로드가 활성화되었습니다" 토스트를 띄우고
+ *    로컬 Set 에 id 를 넣을 뿐이다. 이 파일에 PortOne·IMP·supabase·fetch 호출이 0건이다.
+ *    handleDownload 도 토스트만 띄운다. 돈은 움직이지 않는다.
+ *    → 되살릴 때 결제를 붙이기 전에는 이 버튼을 노출하지 말 것.
+ *
+ * 🔴 정산 비율 표시(:253-262 「공급자 70% · 플랫폼 20% · 검증 10%」)는 **계산 근거가 없다.**
+ *    실제 계산 정본은 utils/pricingCalculator.ts:56 REVENUE_SHARES 이고 값이 다르다
+ *    (platform_fee_percent 25 / supplier_base 60 / quality_bonus 15).
+ *    구조정의서의 30% 배분과도 어긋난다 — 삼중 불일치. 백로그 B-93.
+ */
 import { useState } from "react";
 import { 
   Search, Filter, ShieldCheck, Star, Zap, 
