@@ -20,8 +20,17 @@ const IntroView = ({ onStart }: IntroViewProps) => {
               근거 — 토스 아이콘 원칙 "문자처럼 작게 쓰고 문자의 직관성을 보조한다".
                      랜딩에서 아이콘이 주인공이면 안 되고, 크기가 클수록 둥근 모서리가 도드라진다.
               🔙 되돌리려면 w-16 h-16 → w-28 h-28, Shield w-8 h-8 → w-14 h-14 (중간값 w-20/w-10). */}
+          {/* 그라데이션 제거·라운드 축소(1단계 보완):
+              · TDS 에서 그라데이션은 --button-gradient-color = "로딩 상태 표시"용이다.
+                장식이 아니라 상태다. 평상시는 단색(--button-background-color).
+              · KRDS 래디어스 2~12px, 최댓값 12px — "과하게 둥근 형태 방지".
+              ⚠️ 이 프로젝트는 tailwind.config.ts:105-111 에서 라운드 척도를 덮어썼다.
+                 rounded-md=12px / lg=16px / xl=20px / 2xl=24px (Tailwind 기본과 다름).
+                 따라서 KRDS 12px 는 rounded-xl 이 아니라 **rounded-md** 다.
+              🔙 되돌리려면 bg-trust → bg-gradient-to-br from-trust to-trustTeal,
+                 rounded-md → rounded-2xl(24px). */}
           <div className="relative w-16 h-16 animate-float-gentle">
-            <div className="w-full h-full rounded-2xl bg-gradient-to-br from-trust to-trustTeal flex items-center justify-center shadow-lg">
+            <div className="w-full h-full rounded-md bg-trust flex items-center justify-center shadow-lg">
               <Shield className="w-8 h-8 text-white" />
             </div>
           </div>
@@ -41,8 +50,10 @@ const IntroView = ({ onStart }: IntroViewProps) => {
         </p>
       </div>
 
-      {/* Divider - Trust Gradient (양끝 transparent 라 밝은 배경에서도 그대로 살아난다) */}
-      <div className="w-16 h-0.5 my-8 animate-fade-in rounded-full" style={{ animationDelay: '0.7s', animationFillMode: 'both', background: 'linear-gradient(90deg, transparent, hsl(217 91% 60%), hsl(168 76% 36%), transparent)' }} />
+      {/* Divider — 단색. 화면에 그라데이션이 하나만 남으면 그것만 튄다.
+          🔙 되돌리려면 className 의 bg-slate-200 제거 후 style 에
+             background: 'linear-gradient(90deg, transparent, hsl(217 91% 60%), hsl(168 76% 36%), transparent)' */}
+      <div className="w-16 h-0.5 my-8 animate-fade-in rounded-full bg-slate-200" style={{ animationDelay: '0.7s', animationFillMode: 'both' }} />
 
       {/* Main Headline */}
       <div className="text-center z-10 animate-fade-in" style={{ animationDelay: '0.9s', animationFillMode: 'both' }}>
@@ -75,12 +86,16 @@ const IntroView = ({ onStart }: IntroViewProps) => {
         ))}
       </div>
 
-      {/* CTA Button - Trust Gradient */}
+      {/* CTA Button — 단색(TDS fill variant: 채도 높은 단색) + 라운드 12px.
+          size="xl" 이 button.tsx:26 에서 rounded-xl(이 프로젝트에선 20px)을 주므로
+          rounded-md(12px)로 덮어써 방패와 맞춘다.
+          🔙 되돌리려면 rounded-md 제거(→20px), bg-trust hover:bg-trust-dark →
+             bg-gradient-to-r from-trust to-trustTeal hover:from-trust-light hover:to-trustTeal-light */}
       <div className="mt-10 z-10 animate-fade-in" style={{ animationDelay: '1.3s', animationFillMode: 'both' }}>
         <Button
           onClick={onStart}
           size="xl"
-          className="bg-gradient-to-r from-trust to-trustTeal hover:from-trust-light hover:to-trustTeal-light text-white font-bold shadow-lg shadow-trust/30 hover:shadow-trust/50 transition-all duration-300"
+          className="rounded-md bg-trust hover:bg-trust-dark text-white font-bold shadow-lg shadow-trust/20 transition-colors duration-200"
         >
           시작하기
           <ChevronRight className="w-5 h-5" />
