@@ -163,7 +163,9 @@ const Auth = () => {
           <div className="absolute inset-0 bg-[#3182F6]/20 blur-xl rounded-full" />
         </div>
         <h1 className="text-3xl font-bold text-foreground tracking-tight">VeriNode</h1>
-        <p className="text-muted-foreground text-sm mt-1">나의 데이터 주권을 지키다</p>
+        {/* 랜딩(IntroView)과 같은 문구로 통일. 종전 "나의 데이터 주권을 지키다"는
+            추상적이라 3초 안에 이해되지 않는다는 실사용자 지적(2026-08-22)을 받았다. */}
+        <p className="text-muted-foreground text-sm mt-1">데이터 신탁 플랫폼</p>
       </div>
 
       {/* Auth Card */}

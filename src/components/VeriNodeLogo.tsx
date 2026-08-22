@@ -10,8 +10,11 @@ const VeriNodeLogo = () => {
         <span className="text-lg font-bold text-foreground tracking-tight leading-tight">
           VeriNode
         </span>
-        <span className="text-[10px] text-muted-foreground tracking-wider uppercase">
-          Data Trust Platform
+        {/* 랜딩(IntroView)·가입(Auth)과 같은 문구로 통일.
+            tracking-wider·uppercase 제거: 영문 전용 타이포다 — 한글에 자간을 벌리면
+            "데 이 터  신 탁  플 랫 폼"이 되어 안 읽힌다. */}
+        <span className="text-[10px] text-muted-foreground">
+          데이터 신탁 플랫폼
         </span>
       </div>
     </div>
