@@ -1,3 +1,21 @@
+/**
+ * 🔴 2026-08-22 — 진입점 차단. 되살리기 전에 반드시 읽을 것.
+ *
+ * **가짜 연동이다.** handleConnect(:64)는 1.5초 setTimeout 뒤 로컬 상태만 바꾼다.
+ * 「연동완료」 배지가 뜨지만 DB 에 아무것도 쓰지 않는다.
+ * 대상 3개 — 금융 마이데이터 / 정부24 데이터(주민등록·건강보험·세금) / 통신 마이데이터.
+ *
+ * 🔴 더 근본적인 문제: 부모(SupplierLayout)가 onConnectAll 과 onSkip 에
+ *    **같은 함수(handleProceedToSurvey)** 를 넘기고 있었다. 「연동하기」를 다 눌러도
+ *    「나중에」를 눌러도 결과가 완전히 같았다.
+ *    B-44 에서 "서버는 grant_verification_reward 로 100 VN 고정 지급, isFullyLinked
+ *    분기가 없다"가 확정돼 보상에도 영향이 없다 — 지나가는 것 자체가 무의미한 절차였다.
+ *
+ * 되살릴 때: OAuth → 마이데이터 API 실동작을 먼저 구현한다.
+ * 연동 결과가 무언가를 바꾸지 않는다면 화면을 되살릴 이유가 없다.
+ *
+ * 백로그 B-92.
+ */
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Link2, Building2, Landmark, CreditCard } from "lucide-react";

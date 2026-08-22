@@ -1,7 +1,6 @@
-import { useNavigate } from "react-router-dom";
 import {
   Shield, ChevronRight, Sparkles,
-  PiggyBank, Upload, Coins
+  PiggyBank, Coins
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,8 +27,6 @@ const SupplierHomeTab = ({
   onOpenWallet,
   onGoToEarn,
 }: SupplierHomeTabProps) => {
-  const navigate = useNavigate();
-
   // ProfileContext에서 데이터 가져오기 (전역 상태 활용)
   const {
     trustScore: contextTrustScore,
@@ -107,15 +104,13 @@ const SupplierHomeTab = ({
           </Button>
         </motion.div>
 
-        {/* 데이터 공급하기 — 주 CTA에서 보조 버튼으로 강등(1호 상품 아님). */}
-        <Button
-          onClick={() => navigate('/security-engine')}
-          variant="outline"
-          className="w-full h-12 rounded-md font-medium"
-        >
-          <Upload className="w-4 h-4 mr-2" />
-          데이터 공급하기
-        </Button>
+        {/* 2026-08-22 — 「데이터 공급하기」 버튼을 제거했다(→ /security-engine).
+            도착 화면 SecurityEngineDashboard 의 logs 가 useState 로컬 상태라
+            제출해도 새로고침하면 기록이 사라진다. 문구로 고칠 수 있는 문제가 아니다.
+            1호 상품은 설문이므로 지금 홈에서 이 동선을 열어둘 이유가 없다.
+            라우트 /security-engine 은 남겨 직접 URL 로만 접근된다. 백로그 B-91.
+            ※ 빈자리에 새 요소를 넣지 않았다 — 주 CTA 밑에 비슷한 크기의 보조
+              버튼이 붙어 시선이 갈리던 구조였고, 빼는 것 자체가 목적이다. */}
 
         {/* Quick Action — 데이터 인증 (B-36: 포트폴리오 카드 제거로 전폭화) */}
         <motion.div whileTap={{ scale: 0.98 }}>

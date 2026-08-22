@@ -9,8 +9,8 @@ import TrustScoreHeader from "@/components/TrustScoreHeader";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import { toast } from "sonner";
 
-// ✅ DataLinkPromptStep 추가 (마이데이터 연동 유도 화면)
-import DataLinkPromptStep from "@/components/verification/DataLinkPromptStep";
+// 2026-08-22 — DataLinkPromptStep import 제거(가짜 연동 화면, 백로그 B-92).
+// 파일은 남아 있으나 이 줄이 없으면 번들에 실리지 않는다.
 
 // Tab Content Views
 import SupplierHomeTab from "@/components/tabs/supplier/SupplierHomeTab";
@@ -33,7 +33,6 @@ const UnifiedPortfolioView = lazy(() => import("@/components/views/UnifiedPortfo
 
 type InternalView =
   | 'main'
-  | 'dataLinkPrompt'      // ✅ 새로 추가: 마이데이터 연동 유도 화면
   | 'antiCherryPicker'
   | 'dataPortfolio'
   | 'vcoreAnonymization'
@@ -53,7 +52,6 @@ const SupplierLayout = ({ onSwitchToDemand }: SupplierLayoutProps) => {
   const [lastEarnedPoints, setLastEarnedPoints] = useState(0);
 
   // ✅ DB 설문 딥링크: URL 에 ?surveyId=<uuid> 가 있으면 AntiCherryPicker 를 DB 설문 모드로 바로 진입.
-  //    (연동 유도 화면 dataLinkPrompt 는 건너뜀 — DB 설문 모드는 마이데이터 자동완성을 쓰지 않으므로.)
   const dbSurveyId = new URLSearchParams(window.location.search).get('surveyId') ?? undefined;
   const [currentView, setCurrentView] = useState<InternalView>(dbSurveyId ? 'antiCherryPicker' : 'main');
   const [selectedEarning, setSelectedEarning] = useState<any>(null);
@@ -93,39 +91,19 @@ const SupplierLayout = ({ onSwitchToDemand }: SupplierLayoutProps) => {
     }, 1500);
   };
 
-  // ✅ 설문 시작 시 DataLinkPromptStep 먼저 표시
+  // 2026-08-22 — DataLinkPromptStep(마이데이터 연동 유도)을 거치지 않고 설문으로 직행한다.
+  // 그 화면은 1.5초 setTimeout 뒤 「연동완료」 배지만 띄우고 DB 에 아무것도 쓰지 않았다.
+  // 게다가 onConnectAll 과 onSkip 이 같은 함수를 가리켜 「연동하기」와 「나중에」의
+  // 결과가 완전히 같았다 — 지나가는 것 자체가 무의미한 절차였다.
+  // B-44 에서 "서버는 grant_verification_reward 로 100 VN 고정 지급, isFullyLinked
+  // 분기가 없다"가 이미 확정돼 있어 연동 여부는 보상에도 영향이 없다. 백로그 B-92.
   const handleStartSurvey = () => {
-    setCurrentView('dataLinkPrompt');
-  };
-
-  // ✅ 마이데이터 연동 완료 or 건너뛰기 → 실제 설문으로 이동
-  const handleProceedToSurvey = () => {
     setCurrentView('antiCherryPicker');
   };
 
   // 내부 View 렌더링
   const renderInternalView = () => {
     switch (currentView) {
-
-      // ✅ 마이데이터 연동 유도 화면 (새로 추가)
-      case 'dataLinkPrompt':
-        return (
-          <div className="min-h-screen bg-[#0a0f1a] px-4 py-6">
-            <div className="max-w-xl mx-auto">
-              {/* 뒤로가기 버튼 */}
-              <button
-                onClick={handleBackToMain}
-                className="flex items-center gap-1.5 text-slate-500 text-sm mb-6 hover:text-slate-800 transition-colors"
-              >
-                ← 돌아가기
-              </button>
-              <DataLinkPromptStep
-                onConnectAll={handleProceedToSurvey}
-                onSkip={handleProceedToSurvey}
-              />
-            </div>
-          </div>
-        );
 
       case 'antiCherryPicker':
         return (
@@ -189,7 +167,7 @@ const SupplierLayout = ({ onSwitchToDemand }: SupplierLayoutProps) => {
             vnBalance={vnBalance}
             displayName={displayName}
             isVerified={isVerified}
-            onStartVerification={handleStartSurvey}   // ✅ DataLinkPromptStep 먼저
+            onStartVerification={handleStartSurvey}   // AI 인증 설문으로 직행 (2026-08-22)
             onOpenWallet={() => setActiveTab("wallet")}  // B-36: VN 카드 → 내 지갑 탭 (포트폴리오 진입 숨김)
             onGoToEarn={() => setActiveTab("earn")}   // 홈 주 CTA → 수익 쌓기 탭(설문 목록)
           />

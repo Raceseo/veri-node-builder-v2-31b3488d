@@ -1,3 +1,27 @@
+/**
+ * 🔴 2026-08-22 — 홈의 「데이터 공급하기」 버튼을 제거해 진입점을 좁혔다.
+ *    라우트 /security-engine(App.tsx:69)은 남아 있어 직접 URL 로는 열린다.
+ *
+ * **핵심 결함은 허위 표시가 아니라 기록이 남지 않는 것이다.**
+ *   logs(:19)가 useState 로컬 상태라 제출(:90)해도 **새로고침하면 전부 사라진다.**
+ *   지표 4개(Total Data / Anomalies / Pending / Gold Tier, :298-301)가 그 logs 로
+ *   계산되므로 항상 0 에서 다시 시작한다. 「보안 로그」·「Data Market」도 같다.
+ *   → 문구를 고쳐서 해결되는 문제가 아니다. DB 연결이 선행돼야 한다.
+ *
+ * 🔴 작동 상태 허위 표시 (:160-182)
+ *   「Valuation Agent: READY」·「Security Analyst: Active」는 **상태 바인딩이 전혀 없는
+ *   정적 JSX** 다. 변수도 조건도 없다. 초록 점 animate-pulse 로 살아 움직이는 것처럼
+ *   보이지만 함수가 죽어 있어도 언제나 「Active」로 표시된다.
+ *   "Protocol level validation of incoming financial streams" 문구도 같은 성격.
+ *   B-87(실명 기관 제휴 허위 표시)과 같은 유형 — 사실이 아닌 것을 사실로 표시한다.
+ *
+ * 실재하는 것: 제출 시 Edge Function security-verify(:47)·data-valuation(:56) 호출.
+ *   두 함수는 supabase/functions/ 에 실재한다. 다만 위 「Active」 표시와는 무관하다.
+ *
+ * 되살릴 때: (a)logs 를 DB 로 옮기고 (b):160-182 를 실제 상태에 바인딩하거나 삭제한다.
+ *
+ * 백로그 B-91.
+ */
 import React, { useState } from 'react';
 import { 
   Shield, Database, Activity, Upload, Clock, 
