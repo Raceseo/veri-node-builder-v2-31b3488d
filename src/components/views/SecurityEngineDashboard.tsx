@@ -8,12 +8,22 @@
  *   계산되므로 항상 0 에서 다시 시작한다. 「보안 로그」·「Data Market」도 같다.
  *   → 문구를 고쳐서 해결되는 문제가 아니다. DB 연결이 선행돼야 한다.
  *
- * 🔴 작동 상태 허위 표시 (:160-182)
- *   「Valuation Agent: READY」·「Security Analyst: Active」는 **상태 바인딩이 전혀 없는
- *   정적 JSX** 다. 변수도 조건도 없다. 초록 점 animate-pulse 로 살아 움직이는 것처럼
- *   보이지만 함수가 죽어 있어도 언제나 「Active」로 표시된다.
- *   "Protocol level validation of incoming financial streams" 문구도 같은 성격.
- *   B-87(실명 기관 제휴 허위 표시)과 같은 유형 — 사실이 아닌 것을 사실로 표시한다.
+ * ✅ **작동 상태 허위 표시는 제거됨 (2026-08-22).** 되돌리지 말 것.
+ *   지운 것 3곳 — 전부 상태 바인딩이 없는 정적 JSX 였다:
+ *     (1) 사이드바 「Valuation Agent: READY」·「Security Analyst: Active」 카드 2개.
+ *         초록 점 animate-pulse 로 살아 움직이는 것처럼 보였지만 함수가 죽어 있어도
+ *         언제나 Active 로 표시됐다.
+ *     (2) "MyData Sovereignty Monitor" / "Protocol level validation of incoming
+ *         financial streams." → 「최근 제출 내역」로 교체.
+ *     (3) "No activity detected. Protocol awaiting data ingestion."
+ *         → 「아직 제출한 데이터가 없습니다.」
+ *   B-87(실명 기관 제휴 허위 표시)과 같은 유형이라 같은 기준으로 처리했다.
+ *   🔴 홈 버튼을 없앤 것은 접근 차단이지 표시 제거가 아니다 — URL 직접 접근이
+ *      남으므로 표시 자체를 지워야 했다.
+ *
+ * 🔴 **근본 문제는 미해결이다 (B-91).** logs 가 로컬 상태라 새로고침 시 소멸하는 것은
+ *    그대로다. 화면에 그 사실을 적어뒀을 뿐이다("이 목록은 저장되지 않습니다").
+ *    DB 이관 전에는 이 화면을 홈 동선에 다시 올리지 않는다.
  *
  * 실재하는 것: 제출 시 Edge Function security-verify(:47)·data-valuation(:56) 호출.
  *   두 함수는 supabase/functions/ 에 실재한다. 다만 위 「Active」 표시와는 무관하다.
@@ -180,32 +190,11 @@ const SecurityEngineDashboard: React.FC = () => {
           <NavItem active={activeTab === 'marketplace'} onClick={() => setActiveTab('marketplace')} icon={<ShoppingBag className="w-5 h-5" />} label="Data Market" />
         </div>
 
-        <div className="mt-auto space-y-4">
-          <div className="p-4 bg-gold/5 rounded-2xl border border-gold/20">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gold flex items-center justify-center text-navy shadow-glow">
-                <TrendingUp className="w-4 h-4" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-gray-300">Valuation Agent</p>
-                <p className="text-[10px] text-gold font-bold uppercase">Ready</p>
-              </div>
-            </div>
-          </div>
-          <div className="p-4 bg-trust/5 rounded-2xl border border-trust/20">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-trust flex items-center justify-center text-white font-bold text-sm shadow-trust">
-                AI
-              </div>
-              <div>
-                <p className="text-xs font-bold text-gray-300">Security Analyst</p>
-                <p className="text-[10px] text-success flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" /> Active
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* 2026-08-22 — 「Valuation Agent: READY」·「Security Analyst: Active」 카드 2개 제거.
+            상태 바인딩이 전혀 없는 정적 JSX 였다. 초록 점 animate-pulse 로 살아 움직이는
+            것처럼 보였지만 함수가 죽어 있어도 언제나 Active 로 표시됐다.
+            래퍼(mt-auto space-y-4)까지 함께 지웠다 — 빈 칸이 남으면 껍데기가 된다.
+            메뉴 목록의 flex-1 이 남은 높이를 그대로 채운다. */}
       </nav>
 
       <main className="pl-64 min-h-screen">
@@ -328,12 +317,16 @@ const DashboardTab = ({ logs, getTierColor, getStatusBadge }: {
       <div className="absolute top-0 right-0 p-8 opacity-5">
         <Shield className="w-64 h-64 text-trust" />
       </div>
-      <h3 className="text-xl font-bold mb-2">MyData Sovereignty Monitor</h3>
-      <p className="text-sm text-gray-500 mb-8">Protocol level validation of incoming financial streams.</p>
+      {/* 2026-08-22 — "MyData Sovereignty Monitor" / "Protocol level validation of
+          incoming financial streams." 를 걷어냈다. 마이데이터 금융 스트림을 실시간
+          검증하는 시스템처럼 읽히지만 그런 것은 없다. 제출 시 Edge Function 을
+          한 번 호출할 뿐이다. 화면이 하는 일 그대로 적는다. */}
+      <h3 className="text-xl font-bold mb-2">최근 제출 내역</h3>
+      <p className="text-sm text-gray-500 mb-8">이 목록은 저장되지 않습니다 — 새로고침하면 사라집니다 (B-91).</p>
       
       <div className="space-y-4 relative z-10">
         {logs.length === 0 ? (
-          <div className="py-20 text-center text-gray-600 italic">No activity detected. Protocol awaiting data ingestion.</div>
+          <div className="py-20 text-center text-gray-600">아직 제출한 데이터가 없습니다.</div>
         ) : (
           logs.slice(0, 5).map(log => (
             <div key={log.id} className="flex items-center justify-between p-4 bg-navy/40 border border-white/5 rounded-2xl">
