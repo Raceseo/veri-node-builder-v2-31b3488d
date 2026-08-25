@@ -6,7 +6,7 @@ import {
   Zap, CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
@@ -104,7 +104,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
   const queryClient = useQueryClient();
   const { refetch: refetchProfile } = useProfileContext();
   const [currentStep, setCurrentStep] = useState<SurveyStep>("ethics_pledge");
-  const [pledgeName, setPledgeName] = useState("");
+  const [pledgeAgreed, setPledgeAgreed] = useState(false); // 이름 입력칸(형식적·저장 0건) 대체: 명시적 동의 체크박스
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<SurveyAnswer[]>([]);
   const [currentAnswer, setCurrentAnswer] = useState("");
@@ -583,8 +583,8 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
   }, [currentStep, scanProgress, isDbSurveyMode]);
 
   const handlePledgeSubmit = async () => {
-    if (pledgeName.length < 2) {
-      toast({ title: "이름을 입력해주세요", description: "정자로 본인의 이름을 기입해주세요.", variant: "destructive" });
+    if (!pledgeAgreed) {
+      toast({ title: "확인이 필요합니다", description: "위 내용을 확인하고 체크해주세요.", variant: "destructive" });
       return;
     }
     // J-1(변경1): 설문 서약 동의를 매번 기록(설문마다 서약을 받으므로). 실패 시 진행 차단.
@@ -680,8 +680,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
           <div className="bg-white border border-slate-200 rounded-md p-6 mb-6">
             <div className="border-b border-slate-200 pb-4 mb-4">
               <p className="text-slate-600 text-sm leading-relaxed">
-                본인은 <span className="text-blue-600 font-semibold">VeriNode</span> 플랫폼의 데이터 무결성 원칙을 존중하며,
-                본 설문에 대해 <span className="text-blue-600 font-semibold">진실되고 정확한 응답</span>을 제공할 것을 서약합니다.
+                <span className="text-blue-600 font-semibold">솔직한 답변</span>이 이 데이터의 값을 만듭니다. 아래를 확인하고 시작해 주세요.
               </p>
             </div>
             <div className="space-y-3 mb-6">
@@ -750,26 +749,26 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
             </div>
             )}
 
-            <div className="bg-white rounded-md p-4 border border-slate-200">
-              <label className="block text-sm text-slate-500 mb-2">서약자 이름 (정자로 기입)</label>
-              <Input
-                value={pledgeName}
-                onChange={(e) => setPledgeName(e.target.value)}
-                placeholder="홍길동"
-                className="bg-white border-slate-200 text-slate-900 text-center text-lg font-semibold tracking-widest placeholder:text-slate-500"
+            {/* 이름 입력칸(형식적·DB 저장 0건) 제거 → 명시적 동의 체크박스 1개.
+                동의 행위 없이 survey_ethics 를 "동의"로 기록하지 않기 위한 최소 근거. */}
+            <label className="flex items-start gap-3 bg-white rounded-md p-4 border border-slate-200 cursor-pointer">
+              {/* 터치 히트영역 확보를 위해 label 전체를 누를 수 있게 함 */}
+              <Checkbox
+                checked={pledgeAgreed}
+                onCheckedChange={(checked) => setPledgeAgreed(checked === true)}
+                className="mt-0.5 border-slate-300 data-[state=checked]:bg-trust data-[state=checked]:border-trust"
               />
-              <p className="text-xs text-slate-500 mt-2 text-center">* 본인 이름을 또박또박 정자로 입력해주세요</p>
-            </div>
+              <span className="text-sm text-slate-600 leading-relaxed">위 내용을 확인했고, 정직하게 응답하겠습니다.</span>
+            </label>
           </div>
 
-          <div className="flex items-center justify-between text-xs text-slate-500 mb-6 px-2">
+          <div className="flex items-center text-xs text-slate-500 mb-6 px-2">
             <span>서약일: {new Date().toLocaleDateString('ko-KR')}</span>
-            <span>VeriNode Anti-Cherry-Picker Protocol v2.0</span>
           </div>
 
           <Button
             onClick={handlePledgeSubmit}
-            disabled={pledgeName.length < 2 || isLoadingLinkedData}
+            disabled={!pledgeAgreed || isLoadingLinkedData}
             /* 라이트 전환(2단계): inline 그라데이션 → 단색. TDS fill variant 기준.
                🔙 되돌리려면 style={{ background: isFullyLinked
                   ? "linear-gradient(135deg, #22C55E, #16a34a)"
@@ -781,9 +780,9 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
             {isLoadingLinkedData ? (
               <><Loader2 className="w-5 h-5 mr-2 animate-spin" />데이터 확인 중...</>
             ) : isFullyLinked ? (
-              <><Zap className="w-5 h-5 mr-2" />서약하고 자동 완성 시작하기 (+100 VN)</>
+              <><Zap className="w-5 h-5 mr-2" />확인하고 자동 완성 시작하기 (+100 VN)</>
             ) : (
-              <>서약하고 설문 시작하기<ArrowRight className="w-5 h-5 ml-2" /></>
+              <>확인하고 설문 시작하기<ArrowRight className="w-5 h-5 ml-2" /></>
             )}
           </Button>
         </div>
@@ -1116,11 +1115,12 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
             </div>
           </div>
           <div className="bg-slate-50 border border-slate-200 rounded-md p-4 text-left">
+            {/* 이름칸 제거로 "서약자" 칸 삭제, "프로토콜(ACP v2.0)" 칸도 삭제(감시 톤 제거).
+                2×2 → 남은 두 칸(데이터 방식·응답 수)만. 3칸 재배치하지 않음. */}
             <div className="grid grid-cols-2 gap-4 text-xs">
-              <div><span className="text-slate-500">서약자</span><p className="text-slate-600 font-medium">{pledgeName}</p></div>
               <div><span className="text-slate-500">데이터 방식</span><p className={`font-medium ${isFullyLinked ? "text-green-600" : "text-slate-600"}`}>{isFullyLinked ? "마이데이터 연동" : "직접 입력"}</p></div>
               <div><span className="text-slate-500">응답 수</span><p className="text-slate-600 font-medium">{answers.length}개</p></div>
-              <div><span className="text-slate-500">프로토콜</span><p className="text-green-600 font-medium">ACP v2.0</p></div>
+
             </div>
           </div>
           <p className="text-slate-400 text-xs mt-6">🔒 금융급 보안 프로토콜 적용 중</p>

@@ -67,10 +67,10 @@ const SocialPromiseView = ({ onComplete, displayName = "사용자" }: SocialProm
             <FileSignature className="w-10 h-10 text-primary-foreground" />
           </div>
           <h1 className="text-2xl font-display font-bold text-foreground mb-2">
-            데이터 공급자 <span className="text-gradient">서약</span>
+            <span className="text-gradient">잠깐만요</span>
           </h1>
           <p className="text-muted-foreground">
-            VeriNode 커뮤니티의 신뢰를 지키기 위한 약속입니다
+            VeriNode를 쓰기 전에 이것만 확인해 주세요
           </p>
         </div>
 
@@ -192,16 +192,14 @@ const SocialPromiseView = ({ onComplete, displayName = "사용자" }: SocialProm
           ) : (
             <>
               <FileSignature className="w-5 h-5 mr-2" />
-              서약에 동의합니다
+              확인했습니다
             </>
           )}
         </Button>
 
         <p className="text-sm text-center text-muted-foreground mt-4">
-          {/* B-25: "보장하기" → 단정. 지킬 근거가 없는 표현을 걷어낸다 */}
-          이 서약은 VeriNode 플랫폼의 데이터 무결성을 지키기 위한 것입니다.
-          <br />
-          서약 위반 시 계정 제한 및 보상 회수 조치가 취해질 수 있습니다.
+          {/* B-25: "보장하기" 단정 걷어냄. 2026-08-25: 위협 문구(계정 제한·보상 회수) 삭제, 긍정형 전환 */}
+          솔직한 답변이 모여야 데이터가 값을 가집니다. 그래서 확인을 부탁드립니다.
         </p>
       </div>
     </div>
