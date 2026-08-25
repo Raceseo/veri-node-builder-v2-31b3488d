@@ -31,7 +31,7 @@ type OnboardingStep = 'intro' | 'sovereignty' | 'promise' | 'complete';
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { profile, isLoading, displayName, refetch } = useProfileContext();
+  const { profile, isLoading, refetch } = useProfileContext();
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep | null>(null);
   const [userMode, setUserMode] = useState<'supplier' | 'demand'>('supplier');
   const [isCompletingOnboarding, setIsCompletingOnboarding] = useState(false);
@@ -162,9 +162,8 @@ const Index = () => {
       <Suspense fallback={<LoadingSpinner />}>
         {/* 2026-08-22 — 서약 다음이 곧 온보딩 완료다. 사이에 있던 역할 선택
             (select-mode / DualModeEntryView)을 걷어냈다 — 아래 주석 참조. */}
-        <SocialPromiseView 
-          displayName={displayName}
-          onComplete={() => completeOnboarding('individual')} 
+        <SocialPromiseView
+          onComplete={() => completeOnboarding('individual')}
         />
       </Suspense>
     );

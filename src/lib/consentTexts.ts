@@ -15,13 +15,15 @@ export const ONBOARDING_PLEDGE = {
   // 2026-08-25 v2 → v3: 문구 톤 전환(협박형→협력형, 한자어→일상어) + 위협 문구 삭제.
   //   실사용자 다수가 "뭘 하라는 건지 모른다"(가입→온보딩 동의 12분 41초 실측) →
   //   정의서 v1.4 §10 수리 #4(온보딩 톤 전환)와 같은 방향. 소급 금지(버전 분리).
-  version: "onboarding_pledge/2026-08-25.v3",
-  items: [
-    { key: "ownership", title: "내 데이터는 내 것", description: "내가 제공하는 데이터의 주인은 나입니다. VeriNode는 내가 동의한 범위에서만 이 데이터를 다룹니다." },
-    { key: "honesty", title: "솔직하게 답하기", description: "설문에는 사실대로 답하겠습니다." },
-    { key: "accuracy", title: "프로필은 사실대로", description: "내 프로필 정보를 사실대로 적겠습니다." },
-    { key: "responsibility", title: "성실하게 참여하기", description: "내 답변이 정확할수록 데이터의 값이 올라갑니다." },
+  // 2026-08-25 v3 → v4(㉢): 4개 개별 동의 → 요약 2줄(points) + 단일 동의(agreementLabel, 체크박스 1개).
+  //   실사용자 "동의가 밑에 있고 뭘 하라는 건지 모르겠다" → 3번(survey_ethics)과 같은 단일 동의 방식으로 통일.
+  //   items(4개) 구조를 points + agreementLabel 로 교체. 소급 금지(버전 분리).
+  version: "onboarding_pledge/2026-08-25.v4",
+  points: [
+    "내 데이터의 주인은 나입니다. VeriNode는 내가 동의한 범위에서만 이 데이터를 사용합니다.",
+    "설문과 프로필에 솔직하고 정확하게 답합니다. 그래야 이 데이터가 값을 가집니다.",
   ],
+  agreementLabel: "위 내용을 확인했고, 이에 동의합니다",
 } as const;
 
 export const SURVEY_ETHICS = {

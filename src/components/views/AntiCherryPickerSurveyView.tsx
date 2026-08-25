@@ -756,7 +756,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
               <Checkbox
                 checked={pledgeAgreed}
                 onCheckedChange={(checked) => setPledgeAgreed(checked === true)}
-                className="mt-0.5 border-slate-300 data-[state=checked]:bg-trust data-[state=checked]:border-trust"
+                className="mt-0.5 rounded-[4px] border-slate-300 data-[state=checked]:bg-trust data-[state=checked]:border-trust"
               />
               <span className="text-sm text-slate-600 leading-relaxed">위 내용을 확인했고, 정직하게 응답하겠습니다.</span>
             </label>

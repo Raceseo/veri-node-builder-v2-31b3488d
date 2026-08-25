@@ -1,35 +1,22 @@
 import { useState } from "react";
-import { Shield, CheckCircle, FileSignature, AlertTriangle, KeyRound, ChevronDown } from "lucide-react";
+import { FileSignature } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "@/hooks/use-toast";
 import { recordConsent } from "@/lib/recordConsent";
 import { ONBOARDING_PLEDGE } from "@/lib/consentTexts";
 
 interface SocialPromiseViewProps {
   onComplete: () => void;
-  displayName?: string;
 }
 
-const SocialPromiseView = ({ onComplete, displayName = "사용자" }: SocialPromiseViewProps) => {
-  const [agreements, setAgreements] = useState({
-    ownership: false,
-    honesty: false,
-    accuracy: false,
-    responsibility: false,
-  });
+const SocialPromiseView = ({ onComplete }: SocialPromiseViewProps) => {
+  const [agreed, setAgreed] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
   const [isSigned, setIsSigned] = useState(false);
 
-  const allAgreed = Object.values(agreements).every(Boolean);
-
-  // 문안 원문은 consentTexts.ts(ONBOARDING_PLEDGE)가 단일 출처. 아이콘만 화면에서 매핑.
-  const PLEDGE_ICONS = { ownership: KeyRound, honesty: Shield, accuracy: CheckCircle, responsibility: AlertTriangle } as const;
-  const promises = ONBOARDING_PLEDGE.items.map((it) => ({ ...it, icon: PLEDGE_ICONS[it.key] }));
-
   const handleSign = async () => {
-    if (!allAgreed) return;
+    if (!agreed) return;
 
     setIsSigning(true);
 
@@ -48,13 +35,9 @@ const SocialPromiseView = ({ onComplete, displayName = "사용자" }: SocialProm
       return;
     }
 
-    // 동의 처리 애니메이션
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
     setIsSigned(true);
-
-    // 완료 후 진행
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // 완료 표시를 잠깐 보여준 뒤 진행
+    await new Promise(resolve => setTimeout(resolve, 800));
     onComplete();
   };
 
@@ -70,121 +53,44 @@ const SocialPromiseView = ({ onComplete, displayName = "사용자" }: SocialProm
             <span className="text-gradient">잠깐만요</span>
           </h1>
           <p className="text-muted-foreground">
-            VeriNode를 쓰기 전에 이것만 확인해 주세요
+            아래를 확인하고, 동의에 체크해 주세요
           </p>
         </div>
 
-        {/* 서약 카드 */}
-        <div className="bg-card border border-border rounded-2xl p-6 mb-6 space-y-4">
-          <div className="text-center pb-4 border-b border-border">
-            <p className="text-sm text-muted-foreground">서약자</p>
-            <p className="text-lg font-semibold text-foreground">{displayName} 님</p>
-          </div>
+        {/* ㉢(2026-08-25 v4): 4개 개별 체크박스 → 요약 2줄 + 단일 동의 체크박스.
+            서약자 카드·"서약 동의" 제목·회색 안내박스·「더 알아보기」 접힘을 모두 제거. */}
+        <div className="bg-card border border-border rounded-2xl p-6 mb-6 space-y-5">
+          <ul className="space-y-4">
+            {ONBOARDING_PLEDGE.points.map((point, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                  {i + 1}
+                </span>
+                <p className="text-base text-foreground leading-relaxed">{point}</p>
+              </li>
+            ))}
+          </ul>
 
-          {promises.map((promise) => {
-            const Icon = promise.icon;
-            return (
-              <div
-                key={promise.key}
-                className={`flex items-start gap-2 p-4 rounded-xl transition-all ${
-                  agreements[promise.key]
-                    ? "bg-primary/10 border border-primary/30"
-                    : "bg-muted/50 border border-transparent"
-                }`}
-              >
-                {/* 터치 히트영역 44px 확보(체크박스 자체는 16px) */}
-                <label
-                  htmlFor={promise.key}
-                  className="flex items-center justify-center w-11 h-11 shrink-0 -my-1.5 -ml-1.5 cursor-pointer"
-                >
-                  <Checkbox
-                    id={promise.key}
-                    checked={agreements[promise.key]}
-                    onCheckedChange={(checked) =>
-                      setAgreements(prev => ({ ...prev, [promise.key]: checked === true }))
-                    }
-                  />
-                </label>
-                <div className="flex-1 min-w-0">
-                  {/* (a) 제목은 항상 노출 */}
-                  <label
-                    htmlFor={promise.key}
-                    className="flex items-center gap-2 text-foreground font-medium cursor-pointer"
-                  >
-                    <Icon className="w-4 h-4 text-primary shrink-0" />
-                    {promise.title}
-                  </label>
-                  {/* (a) 설명 전문은 접기. 원문(consentTexts.ONBOARDING_PLEDGE)·version 무변경 */}
-                  <Collapsible>
-                    <CollapsibleTrigger className="mt-1 flex items-center gap-1 text-sm text-primary/80 hover:text-primary transition-colors [&[data-state=open]>svg]:rotate-180">
-                      더 알아보기
-                      <ChevronDown className="w-3.5 h-3.5 transition-transform" />
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <p className="text-base text-muted-foreground mt-1.5 leading-relaxed">
-                        {promise.description}
-                      </p>
-                    </CollapsibleContent>
-                  </Collapsible>
-                </div>
-              </div>
-            );
-          })}
+          {/* 단일 동의 체크박스. rounded-[4px]: 이 프로젝트 rounded-sm=8px 라 16px 박스가
+              원(라디오처럼)이 됨 → 이 화면에서만 네모로 강제(checkbox.tsx 전역 미수정). */}
+          <label className="flex items-start gap-3 pt-4 border-t border-border cursor-pointer">
+            <Checkbox
+              checked={agreed}
+              onCheckedChange={(checked) => setAgreed(checked === true)}
+              className="mt-0.5 rounded-[4px]"
+            />
+            <span className="text-base font-medium text-foreground leading-relaxed">
+              {ONBOARDING_PLEDGE.agreementLabel}
+            </span>
+          </label>
         </div>
 
-        {/* 서약 동의 영역 */}
-        <div className="bg-card border border-border rounded-2xl p-6 mb-6">
-          <div className="text-center">
-            {isSigned ? (
-              <div className="space-y-4">
-                <div className="w-16 h-16 mx-auto bg-green-500/20 rounded-full flex items-center justify-center animate-stamp-appear">
-                  <CheckCircle className="w-8 h-8 text-green-500" />
-                </div>
-                <p className="text-green-500 font-semibold">동의 완료</p>
-                <p className="text-sm text-muted-foreground">
-                  {new Date().toLocaleDateString('ko-KR')} 서약 체결
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {/* I-3 / B-21: "전자 서명" + 지문 아이콘 → 서명 데이터를 받는 것처럼
-                    보이지만 실제로 저장되는 것은 동의 기록뿐이다.
-                    recordConsent 가 넣는 값: user_id / consent_type / consent_version /
-                    is_agreed / agreed_at / user_agent — 서명 이미지·이름·생체정보 없음.
-                    지문 아이콘은 생체 인증까지 연상시켜 함께 교체한다. */}
-                <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                  <CheckCircle className="w-5 h-5" />
-                  <span className="text-sm">서약 동의</span>
-                </div>
-                {/* B-21: 점선 테두리(= "여기에 입력·서명하세요")를 걷어내고
-                    연한 배경의 안내 영역으로 성격을 바꾼다. 서명 데이터를 받지 않으므로
-                    받는 척하는 UI 를 두지 않고, 그 자리에 "실제로 무엇이 기록되는지"를 밝힌다.
-                    높이(h-20)는 유지 — 없애면 카드가 비어 서명 후 상태와 높이가 튄다. */}
-                <div className="h-20 bg-muted rounded-lg flex items-center justify-center px-4">
-                  {isSigning ? (
-                    <div className="flex items-center gap-2 text-primary">
-                      <div className="w-3 h-3 bg-primary rounded-full animate-pulse" />
-                      <span className="text-sm">동의 기록 중...</span>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-foreground/70">
-                      동의하시면 동의한 날짜와 내용이 기록됩니다
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 동의 버튼 */}
+        {/* 동의 버튼 — isSigning/isSigned 상태 피드백은 버튼이 직접 표시(별도 안내박스 제거) */}
         <Button
           onClick={handleSign}
-          disabled={!allAgreed || isSigning || isSigned}
+          disabled={!agreed || isSigning || isSigned}
           className="w-full h-14 bg-gradient-primary hover:opacity-90 text-base font-semibold"
         >
-          {/* B-21: 버튼 3개 상태의 "서명" 표현도 함께 정리.
-              위 안내가 "동의 기록 중..."인데 버튼만 "서명 중..."이면 같은 순간에 모순된다. */}
           {isSigning ? (
             <>동의 기록 중...</>
           ) : isSigned ? (
@@ -192,13 +98,13 @@ const SocialPromiseView = ({ onComplete, displayName = "사용자" }: SocialProm
           ) : (
             <>
               <FileSignature className="w-5 h-5 mr-2" />
-              확인했습니다
+              동의하고 계속하기
             </>
           )}
         </Button>
 
         <p className="text-sm text-center text-muted-foreground mt-4">
-          {/* B-25: "보장하기" 단정 걷어냄. 2026-08-25: 위협 문구(계정 제한·보상 회수) 삭제, 긍정형 전환 */}
+          {/* B-25: "보장하기" 단정 걷어냄. 2026-08-25: 위협 문구 삭제, 긍정형 전환 */}
           솔직한 답변이 모여야 데이터가 값을 가집니다. 그래서 확인을 부탁드립니다.
         </p>
       </div>
