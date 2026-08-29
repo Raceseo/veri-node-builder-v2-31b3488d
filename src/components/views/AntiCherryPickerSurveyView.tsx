@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { 
   Shield, FileSignature, AlertTriangle, CheckCircle, 
-  Brain, Lock, Fingerprint, Eye, Activity, 
+  Brain, Eye, Activity, 
   ArrowRight, Loader2, ShieldCheck, Database, Building2, CreditCard,
   Zap, CheckCircle2
 } from "lucide-react";
@@ -111,8 +111,9 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
   const [selectedMulti, setSelectedMulti] = useState<string[]>([]); // multi_choice 선택 텍스트들(저장 시 JSON.stringify)
   const [crossVerifyIndex, setCrossVerifyIndex] = useState(0);
   const [crossVerifyAnswers, setCrossVerifyAnswers] = useState<string[]>([]);
-  const [scanProgress, setScanProgress] = useState(0);
-  const [scanStage, setScanStage] = useState(0);
+  // 2026-08-29 — scanProgress(가짜 진행률)·scanStage(연출 문구 순환) 제거.
+  //   대신 "지금 실제로 실행 중인 것"만 담는다. 화면 문구와 1:1 대응한다.
+  const [scanPhase, setScanPhase] = useState<"saving" | "claiming">("saving");
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   
   const [linkedData, setLinkedData] = useState<LinkedDataSummary | null>(null);
@@ -157,6 +158,7 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
   const mouseTrajectory = useRef<MouseTrajectory[]>([]);
   const lastInputTime = useRef<number>(Date.now());
   const isSavingRef = useRef(false); // 설문 응답 중복 저장 방지(제출 중/완료 시 재호출 차단)
+  const submitStartedRef = useRef(false); // security_scan 제출 시퀀스 1회 실행 보장(StrictMode 대비)
 
   // ✅ DB 설문 모드: surveyId 가 있으면 survey_questions 에서 문항을 읽어온다.
   const isDbSurveyMode = !!surveyId;
@@ -557,30 +559,47 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
     }
   };
 
-  // ① 진행률 애니메이션 — 순수 증가만(updater 안에서 side effect 호출 금지: StrictMode 이중 발화 방지)
+  // 2026-08-29 — 제출 직후 화면에서 **가짜 대기 10초를 제거**했다.
+  //
+  //   전에는 진행률이 setInterval 로 0→100 까지 10.0초(0.5 × 200회 × 50ms) 올라가고,
+  //   **100% 에 닿은 뒤에야** saveSurveyResponses()/claimSurveyReward() 가 시작했다.
+  //   즉 그 10초는 서버를 기다리는 시간이 아니라 **저장을 미루는 시간**이었고,
+  //   그동안 화면은 "타이핑 패턴 분석 중"·"행동 패턴 이상 탐지 중"이라고 말했다.
+  //   응답자를 의심하는 표현인데다 그 분석은 그 시점에 실행되지도 않았다.
+  //
+  //   ⚠️ grant_survey_reward 의 최소 응답시간 30,000ms 판정과는 **무관하다.**
+  //     timeSpent 는 문항 제출 시점(handleNextQuestion)에 계산·확정되어 answers 에 담기고,
+  //     saveSurveyResponses 는 그 값을 옮길 뿐이다(내부에 Date.now() 호출 0건).
+  //     이 화면이 몇 초를 머무르든 문턱은 달라지지 않는다.
+  //
+  //   최소 표시 0.8초는 **깜빡임 방지 한정**이다. 저장이 즉시 끝나면 화면이 번쩍하고
+  //   지나가므로 그것만 막는다 — 그 이상의 지연 연출은 두지 않는다.
   useEffect(() => {
     if (currentStep !== "security_scan") return;
-    const progressInterval = setInterval(() => {
-      setScanProgress(prev => Math.min(prev + 0.5, 100));
-    }, 50);
-    const stageInterval = setInterval(() => setScanStage(prev => (prev + 1) % 5), 2000);
-    return () => { clearInterval(progressInterval); clearInterval(stageInterval); };
-  }, [currentStep]);
+    // StrictMode 이중 발화 가드. 즉시 실행으로 바뀌어 두 마운트가 겹칠 수 있다.
+    //   saveSurveyResponses 는 isSavingRef 로 막히지만 조기 return 후 .then 이 이어져
+    //   claimSurveyReward 가 두 번 불릴 수 있으므로 시퀀스 전체를 한 번만 태운다.
+    if (submitStartedRef.current) return;
+    submitStartedRef.current = true;
 
-  // ② 진행률 100% 도달 시 저장/인증을 1회만 실행. saveSurveyResponses 의 isSavingRef 가드가 중복을 최종 차단.
-  useEffect(() => {
-    if (currentStep !== "security_scan" || scanProgress < 100) return;
-    // DB 설문 모드는 응답만 저장(VN 적립 없음), 인증 모드는 기존대로 프로필 인증
+    const startedAt = Date.now();
+    const holdMinimum = () => {
+      const remain = 800 - (Date.now() - startedAt);
+      return remain > 0 ? new Promise<void>(r => setTimeout(r, remain)) : Promise.resolve();
+    };
+
     if (isDbSurveyMode) {
       // B-1: 응답 저장 성공 직후 별도로 보상 적립(Edge Function). 적립이 실패해도 응답은 남는다.
       saveSurveyResponses()
-        .then(() => claimSurveyReward())
+        .then(() => { setScanPhase("claiming"); return claimSurveyReward(); })
+        .then(holdMinimum)
         .then(() => setCurrentStep("complete"));
     } else {
       // B-30 (가) 차단: 실패하면 완료 화면으로 넘어가지 않는다.
-      updateProfileVerification().then((ok) => { if (ok) setCurrentStep("complete"); });
+      updateProfileVerification()
+        .then(async (ok) => { await holdMinimum(); if (ok) setCurrentStep("complete"); });
     }
-  }, [currentStep, scanProgress, isDbSurveyMode]);
+  }, [currentStep, isDbSurveyMode]);
 
   const handlePledgeSubmit = async () => {
     if (!pledgeAgreed) {
@@ -647,14 +666,6 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
       setCurrentStep("security_scan");
     }
   };
-
-  const scanStages = [
-    { icon: Fingerprint, text: "타이핑 패턴 분석 중...", detail: "keystroke dynamics verification" },
-    { icon: Activity, text: "마우스 궤적 검증 중...", detail: "cursor trajectory analysis" },
-    { icon: Brain, text: "응답 일관성 교차 검증 중...", detail: "cross-reference validation" },
-    { icon: Eye, text: "행동 패턴 이상 탐지 중...", detail: "anomaly detection processing" },
-    { icon: Lock, text: "무결성 인증서 발급 중...", detail: "integrity certificate generation" },
-  ];
 
   const linkedDataCount = {
     financial: linkedData?.financial.length || 0,
@@ -1088,31 +1099,24 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
 
   // ─── STEP 4: Security Scan ────────────────────────────────────────────────
   if (currentStep === "security_scan") {
-    const CurrentIcon = scanStages[scanStage].icon;
+    /* 2026-08-29 — 「보안 분석 진행 중」 화면을 저장 화면으로 바꿨다.
+       지운 것: 진행률 %(가짜) · 「보안 분석 진행 중」 · 「금융급 보안 프로토콜 적용 중」 ·
+                scanStages 5종(타이핑 패턴 분석/마우스 궤적 검증/응답 일관성 교차 검증/
+                행동 패턴 이상 탐지/무결성 인증서 발급) · 영문 부제 전부.
+       이유: ①그 시점에 실행되는 것은 응답 저장과 보상 적립 둘뿐이었다
+             ②「이상 탐지」는 응답자를 용의자로 세우는 표현이다 —
+               의심은 기계가 조용히 한다(질문 헌장).
+       남은 문구 2개는 실제로 실행 중인 함수와 1:1 대응한다. */
+    const phaseText = scanPhase === "saving"
+      ? "응답을 저장하고 있어요…"
+      : "리워드를 적립하고 있어요…";
     return (
       <div className="relative min-h-screen bg-slate-50 flex items-center justify-center p-6">
         <BackLink onClick={handleSurveyBack} floating label={EXIT_SURVEY_LABEL} />
         <div className="max-w-lg w-full text-center">
-          <div className="relative w-40 h-40 mx-auto mb-8">
-            <div className="absolute inset-0 rounded-full border-4 border-blue-200 animate-pulse" />
-            <div className="absolute inset-2 rounded-full border-2 border-transparent border-t-blue-500 border-r-blue-400 animate-spin" style={{ animationDuration: '2s' }} />
-            <div className="absolute inset-4 rounded-full border-2 border-transparent border-b-cyan-500 border-l-cyan-400 animate-spin" style={{ animationDuration: '3s', animationDirection: 'reverse' }} />
-            <div className="absolute inset-8 rounded-full bg-blue-600 flex items-center justify-center">
-              <CurrentIcon className="w-10 h-10 text-white animate-pulse" />
-            </div>
-          </div>
-          <div className="mb-6">
-            <h2 className="text-xl font-bold text-slate-900 mb-2">보안 분석 진행 중</h2>
-            <p className="text-blue-600 font-mono text-sm animate-pulse">{scanStages[scanStage].text}</p>
-            <p className="text-slate-500 font-mono text-xs mt-1">{scanStages[scanStage].detail}</p>
-          </div>
+          <Loader2 className="w-12 h-12 mx-auto mb-6 text-blue-600 animate-spin" />
           <div className="mb-8">
-            <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
-              <span>분석 진행률</span><span>{Math.round(scanProgress)}%</span>
-            </div>
-            <div className="h-2 bg-white rounded-full overflow-hidden">
-              <div className="h-full bg-blue-600 transition-all duration-100" style={{ width: `${scanProgress}%` }} />
-            </div>
+            <h2 className="text-xl font-bold text-slate-900">{phaseText}</h2>
           </div>
           <div className="bg-slate-50 border border-slate-200 rounded-md p-4 text-left">
             {/* 이름칸 제거로 "서약자" 칸 삭제, "프로토콜(ACP v2.0)" 칸도 삭제(감시 톤 제거).
@@ -1123,7 +1127,8 @@ const AntiCherryPickerSurveyView = ({ onBack, onComplete, surveyId, onGoToEarn }
 
             </div>
           </div>
-          <p className="text-slate-400 text-xs mt-6">🔒 금융급 보안 프로토콜 적용 중</p>
+          {/* 사실인 범위로만 남긴다 — https 로 전송된다는 것 외에 주장하지 않는다. */}
+          <p className="text-slate-400 text-xs mt-6">🔒 암호화된 연결로 전송됩니다</p>
         </div>
         {exitConfirmDialog}
       </div>
